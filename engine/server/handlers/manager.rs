@@ -296,7 +296,7 @@ pub async fn run_managed_experiment(
 
 fn build_julia_eval_code(config: &ExperimentRunConfig) -> String {
     format!(
-        r#"include("/home/amuredo/amuredo-alphafactor/analysis/eval_template.jl")
+        r#"include("/home/amure-do/amure-do-alphafactor/analysis/eval_template.jl")
 run_evaluation(
     px_threshold={},
     oi_threshold={},

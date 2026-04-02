@@ -1,7 +1,7 @@
 /**
- * amuredo Node.js HTTP Backend Server
+ * amure-do Node.js HTTP Backend Server
  *
- * Implements the amuredo backend protocol:
+ * Implements the amure-do backend protocol:
  *   GET  /health  -> {"status": "ok"}
  *   POST /exec    -> {"status": "ok", "output": "..."}
  *
@@ -83,7 +83,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`amuredo backend listening on ${HOST}:${PORT}`);
+  console.log(`amure-do backend listening on ${HOST}:${PORT}`);
   fs.writeFileSync(READY_FILE, "ready\n");
 });
 

@@ -1,4 +1,4 @@
-# amuredo Python Backend
+# amure-do Python Backend
 
 Minimal HTTP backend using Python's built-in `http.server`. No framework required.
 
@@ -10,4 +10,4 @@ python server.py
 ```
 
 The server listens on `0.0.0.0:8090` by default. Set `AMUREDO_PORT` to override.
-Configure `amuredo.toml` to point at this backend with `type = "http"` and `url = "http://localhost:8090"`.
+Configure `amure-do.toml` to point at this backend with `type = "http"` and `url = "http://localhost:8090"`.

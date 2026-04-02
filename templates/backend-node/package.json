@@ -1,11 +1,11 @@
 {
-  "name": "amuredo-backend-node",
+  "name": "amure-do-backend-node",
   "version": "1.0.0",
-  "description": "amuredo Node.js HTTP backend template",
+  "description": "amure-do Node.js HTTP backend template",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["amuredo", "backend"],
+  "keywords": ["amure-do", "backend"],
   "license": "MIT"
 }

@@ -1,7 +1,7 @@
 """
-amuredo Python HTTP Backend Server
+amure-do Python HTTP Backend Server
 
-Implements the amuredo backend protocol:
+Implements the amure-do backend protocol:
   GET  /health  -> {"status": "ok"}
   POST /exec    -> {"status": "ok", "output": "..."}
 
@@ -102,9 +102,9 @@ class AmuredoHandler(BaseHTTPRequestHandler):
 
 def main():
     server = HTTPServer((HOST, PORT), AmuredoHandler)
-    print(f"amuredo backend listening on {HOST}:{PORT}", flush=True)
+    print(f"amure-do backend listening on {HOST}:{PORT}", flush=True)
 
-    # Signal readiness to amuredo engine
+    # Signal readiness to amure-do engine
     READY_FILE.write_text("ready\n")
 
     try:

@@ -1,14 +1,14 @@
-/// Configuration system — loads from amuredo.toml, falls back to defaults.
+/// Configuration system — loads from amure-do.toml, falls back to defaults.
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use crate::server::backend::BackendConfig;
 
-const CONFIG_FILE: &str = "amuredo.toml";
+const CONFIG_FILE: &str = "amure-do.toml";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AmuConfig {
+pub struct AmureConfig {
     #[serde(default)]
     pub project: ProjectConfig,
     #[serde(default)]
@@ -117,7 +117,7 @@ pub struct DashboardConfig {
     pub accent_color: String,
 }
 
-fn default_title() -> String { "amuredo".into() }
+fn default_title() -> String { "amure-do".into() }
 fn default_accent() -> String { "#58a6ff".into() }
 
 impl Default for DashboardConfig {
@@ -129,7 +129,7 @@ impl Default for DashboardConfig {
     }
 }
 
-impl Default for AmuConfig {
+impl Default for AmureConfig {
     fn default() -> Self {
         Self {
             project: ProjectConfig::default(),
@@ -142,13 +142,13 @@ impl Default for AmuConfig {
     }
 }
 
-impl AmuConfig {
-    /// Load configuration from amuredo.toml, falling back to defaults.
+impl AmureConfig {
+    /// Load configuration from amure-do.toml, falling back to defaults.
     pub fn load() -> Self {
         let path = Path::new(CONFIG_FILE);
         if path.exists() {
             match std::fs::read_to_string(path) {
-                Ok(content) => match toml::from_str::<AmuConfig>(&content) {
+                Ok(content) => match toml::from_str::<AmureConfig>(&content) {
                     Ok(config) => return config,
                     Err(e) => {
                         tracing::warn!("Failed to parse {}: {} — using defaults", CONFIG_FILE, e);
@@ -162,7 +162,7 @@ impl AmuConfig {
         Self::default()
     }
 
-    /// Save current configuration back to amuredo.toml.
+    /// Save current configuration back to amure-do.toml.
     pub fn save(&self) -> Result<(), String> {
         let content = toml::to_string_pretty(self).map_err(|e| e.to_string())?;
         std::fs::write(CONFIG_FILE, content).map_err(|e| e.to_string())

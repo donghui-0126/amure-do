@@ -3,22 +3,22 @@ use std::time::Instant;
 
 use tokio::sync::RwLock;
 
-use amuredo::config::AmuConfig;
-use amuredo::knowledge::db::KnowledgeDB;
-use amuredo::server::backend::Backend;
-use amuredo::server::routes::{build_router, AppState};
+use amure_do::config::AmureConfig;
+use amure_do::knowledge::db::KnowledgeDB;
+use amure_do::server::backend::Backend;
+use amure_do::server::routes::{build_router, AppState};
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
     // Load configuration
-    let amu_config = AmuConfig::load();
+    let amure_config = AmureConfig::load();
 
-    println!("=== amuredo — Hypothesis Engine ===");
-    println!("Project: {} ({})", amu_config.project.name, amu_config.project.domain);
-    println!("Backend: {:?}", amu_config.backend.backend_type);
-    println!("LLM: {}", amu_config.llm.default_provider);
+    println!("=== amure-do — Hypothesis Engine ===");
+    println!("Project: {} ({})", amure_config.project.name, amure_config.project.domain);
+    println!("Backend: {:?}", amure_config.backend.backend_type);
+    println!("LLM: {}", amure_config.llm.default_provider);
 
     let t0 = Instant::now();
 
@@ -33,32 +33,32 @@ async fn main() {
     );
 
     // Load Lab conversations
-    let chat_state = amuredo::server::handlers::chat::ChatState::load();
+    let chat_state = amure_do::server::handlers::chat::ChatState::load();
     let n_sessions = chat_state.sessions.len();
     let n_messages = chat_state.messages.len();
     println!("Lab: {} sessions, {} messages", n_sessions, n_messages);
 
     // Load canvas
-    let canvas_state = amuredo::server::handlers::canvas::CanvasState::load();
+    let canvas_state = amure_do::server::handlers::canvas::CanvasState::load();
     println!("Canvas: {} nodes", canvas_state.nodes.len());
 
     // Load user profile
-    let profile = amuredo::server::handlers::adaptive::UserProfile::load();
+    let profile = amure_do::server::handlers::adaptive::UserProfile::load();
     println!("Profile: adaptive={}, {} disagreements, {} hooks",
         profile.adaptive_mode, profile.disagreements.len(), profile.hooks.len());
 
     // Create backend from config
-    let backend = Backend::new(amu_config.backend.clone());
+    let backend = Backend::new(amure_config.backend.clone());
 
-    // Build LLM config from amuredo.toml (with fallback to saved llm_config.json)
+    // Build LLM config from amure-do.toml (with fallback to saved llm_config.json)
     let llm_config = {
-        let saved = amuredo::server::llm_provider::LlmConfig::load();
+        let saved = amure_do::server::llm_provider::LlmConfig::load();
         if saved.provider != "claude_cli" || saved.api_key.is_some() {
             // Use saved config if it has been customized
             saved
         } else {
-            // Use config from amuredo.toml
-            amu_config.to_llm_config()
+            // Use config from amure-do.toml
+            amure_config.to_llm_config()
         }
     };
 
@@ -66,7 +66,7 @@ async fn main() {
 
     // Activity log
     let activity = Arc::new(RwLock::new(
-        amuredo::server::activity::ActivityState::new(),
+        amure_do::server::activity::ActivityState::new(),
     ));
     {
         let mut log = activity.write().await;
@@ -83,18 +83,18 @@ async fn main() {
         profile: Arc::new(RwLock::new(profile)),
         llm_config: Arc::new(RwLock::new(llm_config)),
         call_log: Arc::new(RwLock::new(
-            amuredo::server::handlers::monitor::CallLog::default(),
+            amure_do::server::handlers::monitor::CallLog::default(),
         )),
         activity,
         backend: Arc::new(RwLock::new(backend)),
-        amu_config: Arc::new(RwLock::new(amu_config.clone())),
+        amure_config: Arc::new(RwLock::new(amure_config.clone())),
     };
     let app = build_router(state);
 
-    let addr = format!("{}:{}", amu_config.server.host, amu_config.server.port);
+    let addr = format!("{}:{}", amure_config.server.host, amure_config.server.port);
     println!("\nServer listening on http://{}", addr);
-    println!("  Dashboard: http://localhost:{}/", amu_config.server.port);
-    println!("  Backend:   POST http://localhost:{}/api/backend/exec", amu_config.server.port);
+    println!("  Dashboard: http://localhost:{}/", amure_config.server.port);
+    println!("  Backend:   POST http://localhost:{}/api/backend/exec", amure_config.server.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }

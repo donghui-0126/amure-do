@@ -1,8 +1,8 @@
-# amuredo
+# amure-do
 
 **Hypothesis engine that works, regardless.**
 
-amuredo is a hypothesis-driven research engine that structures argumentation, manages evidence, and runs experiments across any domain. The name comes from the Korean word "아무래도" (amuredo), meaning "regardless" — it works regardless of domain, backend, or AI provider.
+amure-do is a hypothesis-driven research engine that structures argumentation, manages evidence, and runs experiments across any domain. The name comes from the Korean word "아무래도" (amuredo), meaning "regardless" — it works regardless of domain, backend, or AI provider.
 
 ## Features
 
@@ -38,7 +38,7 @@ cargo build --release
 
 ### 2. Configure
 
-Edit `amuredo.toml`:
+Edit `amure-do.toml`:
 
 ```toml
 [project]
@@ -60,14 +60,14 @@ enabled = ["claim_gate", "argument_gate"]
 ### 3. Run
 
 ```bash
-./target/release/amuredo
+./target/release/amure-do
 ```
 
 Open http://localhost:8080 in your browser. The dashboard loads immediately; no external dependencies needed.
 
 ## Configuration
 
-### amuredo.toml Sections
+### amure-do.toml Sections
 
 #### `[project]`
 - `name` (string): Research project name
@@ -120,7 +120,7 @@ python server.py
 
 The backend listens on `http://0.0.0.0:8090` by default. Set `AMUREDO_PORT` to change it.
 
-3. Configure amuredo.toml:
+3. Configure amure-do.toml:
 
 ```toml
 [backend]
@@ -149,7 +149,7 @@ julia server.jl
 
 The backend watches for `_cmd.txt`, executes it, and writes output to `_out.txt`.
 
-3. Configure amuredo.toml:
+3. Configure amure-do.toml:
 
 ```toml
 [backend]
@@ -167,7 +167,7 @@ cd my-backend
 npm install
 ```
 
-2. Configure amuredo.toml:
+2. Configure amure-do.toml:
 
 ```toml
 [backend]
@@ -188,7 +188,7 @@ type = "none"
 
 ## LLM Providers
 
-amuredo routes to 11 providers with automatic fallback. Configure each via environment variables or `amuredo.toml`.
+amuredo routes to 11 providers with automatic fallback. Configure each via environment variables or `amure-do.toml`.
 
 | Provider | Type | Setup | Default URL |
 |----------|------|-------|-------------|
@@ -256,7 +256,7 @@ Each stage has an associated gate that validates assumptions and enforces standa
 6. **DSR Gate**: Data, Source, Reasoning — is the evidence complete?
 7. **Judge Gate**: Final verdict confidence and caveats.
 
-Enable gates in `amuredo.toml`:
+Enable gates in `amure-do.toml`:
 
 ```toml
 [gates]
@@ -289,7 +289,7 @@ Configure:
 
 ### Simple Research (LLM Only)
 
-1. Create `amuredo.toml`:
+1. Create `amure-do.toml`:
 
 ```toml
 [project]
@@ -319,7 +319,7 @@ cd templates/backend-python
 python server.py &
 ```
 
-2. Create `amuredo.toml`:
+2. Create `amure-do.toml`:
 
 ```toml
 [project]
@@ -370,7 +370,7 @@ print(f"Correlation: {correlation:.3f}")
 cargo build --release
 ```
 
-Binary: `target/release/amuredo`
+Binary: `target/release/amure-do`
 
 ### Development
 
@@ -400,7 +400,7 @@ Edit `engine/server/llm_provider.rs` and add a new provider variant. Implement t
 
 ### Custom Gate
 
-Create a new gate struct in `engine/knowledge/framework.rs`. Implement validation logic. Enable in `amuredo.toml`.
+Create a new gate struct in `engine/knowledge/framework.rs`. Implement validation logic. Enable in `amure-do.toml`.
 
 ## Contributing
 
@@ -421,8 +421,8 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 - **Issues**: Report bugs and feature requests on GitHub
 - **Discussions**: Ask questions in Discussions
-- **Documentation**: Extended docs at https://amuredo.dev (coming soon)
+- **Documentation**: Extended docs at https://amure-do.dev (coming soon)
 
 ---
 
-**amuredo** — Hypothesis engine that works, regardless.
+**amure-do** — Hypothesis engine that works, regardless.

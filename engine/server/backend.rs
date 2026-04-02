@@ -91,7 +91,7 @@ impl Backend {
             BackendType::Http => self.exec_http(code, timeout).await,
             BackendType::File => self.exec_file(code, timeout).await,
             BackendType::Subprocess => self.exec_subprocess(code, timeout).await,
-            BackendType::None => Err("No backend configured. Set [backend] in amuredo.toml".into()),
+            BackendType::None => Err("No backend configured. Set [backend] in amure-do.toml".into()),
         }
     }
 

@@ -1,16 +1,16 @@
 [package]
-name = "amuredo"
+name = "amure-do"
 version = "0.1.0"
 edition = "2024"
 description = "Hypothesis-driven research engine — works regardless of domain, backend, or AI provider"
 license = "MIT"
-repository = "https://github.com/amuredo/amuredo"
+repository = "https://github.com/amuredo/amure-do"
 
 [lib]
 path = "engine/lib.rs"
 
 [[bin]]
-name = "amuredo"
+name = "amure-do"
 path = "engine/main.rs"
 
 [dependencies]

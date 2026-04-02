@@ -1,13 +1,13 @@
 """
-amuredo Julia File-Based Backend Server
+amure-do Julia File-Based Backend Server
 
-Implements the amuredo file-based backend protocol:
+Implements the amure-do file-based backend protocol:
   - Watches `_cmd.txt` for a code string to execute
   - Writes captured output to `_out.txt`
   - Creates `_ready` on startup to signal readiness
   - Logs activity to `_server.log`
 
-amuredo writes the code to `_cmd.txt`, this server executes it,
+amure-do writes the code to `_cmd.txt`, this server executes it,
 then writes results to `_out.txt` and deletes `_cmd.txt`.
 """
 
@@ -42,7 +42,7 @@ end
 function main()
     using Dates
 
-    log("amuredo Julia backend starting")
+    log("amure-do Julia backend starting")
 
     # Signal readiness
     open(READY_FILE, "w") do f

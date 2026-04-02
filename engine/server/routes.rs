@@ -7,7 +7,7 @@ use tower_http::cors::CorsLayer;
 
 use crate::knowledge::db::KnowledgeDB;
 use crate::server::backend::Backend;
-use crate::config::AmuConfig;
+use crate::config::AmureConfig;
 use super::activity::ActivityLog;
 
 use super::handlers::{query, knowledge, dashboard, external, chat, backend, canvas, monitor, evaluator, manager, judge, thesis_api, judge_v4, adaptive, strategy, framework_api};
@@ -22,7 +22,7 @@ pub struct AppState {
     pub llm_config: Arc<RwLock<crate::server::llm_provider::LlmConfig>>,
     pub activity: ActivityLog,
     pub backend: Arc<RwLock<Backend>>,
-    pub amu_config: Arc<RwLock<AmuConfig>>,
+    pub amure_config: Arc<RwLock<AmureConfig>>,
 }
 
 pub fn build_router(state: AppState) -> Router {
