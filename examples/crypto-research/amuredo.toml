@@ -1,0 +1,26 @@
+[project]
+name = "Crypto Factor Research"
+domain = "crypto"
+description = "Hypothesis-driven crypto alpha factor discovery"
+
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[backend]
+type = "file"
+dir = "backend"
+command = "julia"
+script = "server.jl"
+timeout_secs = 300
+
+[llm]
+default_provider = "claude_cli"
+max_tokens = 4096
+
+[gates]
+enabled = ["claim_gate", "thesis_gate", "experiment_gate", "argument_gate", "validity_gate", "dsr_gate", "judge_gate"]
+
+[dashboard]
+title = "Crypto Factor Research"
+accent_color = "#f0883e"

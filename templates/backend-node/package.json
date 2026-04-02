@@ -1,0 +1,11 @@
+{
+  "name": "amuredo-backend-node",
+  "version": "1.0.0",
+  "description": "amuredo Node.js HTTP backend template",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["amuredo", "backend"],
+  "license": "MIT"
+}

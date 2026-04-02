@@ -1,0 +1,35 @@
+[project]
+name = "My Research"
+domain = "general"
+description = "Hypothesis-driven research project"
+
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[backend]
+type = "none"
+# type = "http"
+# url = "http://localhost:5000"
+# type = "file"
+# dir = "backend"
+# command = "python"
+# script = "server.py"
+# type = "subprocess"
+# command = "python"
+timeout_secs = 300
+
+[llm]
+default_provider = "claude_cli"
+# default_model = "claude-sonnet-4-20250514"
+# default_api_key = ""
+# default_api_url = ""
+max_tokens = 4096
+
+[gates]
+enabled = ["claim_gate", "argument_gate"]
+# Available: claim_gate, thesis_gate, experiment_gate, argument_gate, validity_gate, dsr_gate, judge_gate
+
+[dashboard]
+title = "amuredo"
+accent_color = "#58a6ff"

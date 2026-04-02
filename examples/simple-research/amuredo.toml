@@ -1,0 +1,21 @@
+[project]
+name = "Literature Review"
+domain = "general"
+description = "Structured hypothesis testing for literature review"
+
+[server]
+port = 8080
+
+[backend]
+type = "none"
+
+[llm]
+default_provider = "ollama"
+default_model = "llama3.1"
+max_tokens = 4096
+
+[gates]
+enabled = ["claim_gate"]
+
+[dashboard]
+title = "My Research"

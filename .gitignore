@@ -1,0 +1,69 @@
+# Build artifacts
+/target/
+Cargo.lock
+
+# Data (generated at runtime)
+/data/
+/backend/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Original reference project
+/amuredo-alphafactor/
+
+# OMC state
+.omc/
+
+# Logs and runtime files
+*.log
+_server.pid
+_ready
+_cmd.txt
+_out.txt
+
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+
+# Temporary files
+*.tmp
+*.bak
+~*
+.tmp/
+
+# Python (if using Python backend)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Node (if using Node backend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Julia (if using Julia backend)
+.julia/
+Manifest.toml
+
+# Project-specific artifacts
+*.profdata

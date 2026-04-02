@@ -1,0 +1,38 @@
+[package]
+name = "amuredo"
+version = "0.1.0"
+edition = "2024"
+description = "Hypothesis-driven research engine — works regardless of domain, backend, or AI provider"
+license = "MIT"
+repository = "https://github.com/amuredo/amuredo"
+
+[lib]
+path = "engine/lib.rs"
+
+[[bin]]
+name = "amuredo"
+path = "engine/main.rs"
+
+[dependencies]
+arrow = { version = "55", features = ["ipc"] }
+ndarray = { version = "0.16", features = ["rayon"] }
+rayon = "1.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "trace"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+toml = "0.8"
+
+[dev-dependencies]
+approx = "0.5"
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = true

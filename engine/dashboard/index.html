@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>amuredo — Hypothesis Engine</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; font-size: 15px; }
+.header { background: linear-gradient(135deg, #161b22 0%, #1a1f2b 100%); padding: 14px 24px; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 16px; }
+.header h1 { font-size: 22px; color: #7c3aed; }
+.header .subtitle { font-size: 13px; color: #8b949e; margin-left: -8px; }
+.header .tagline { font-size: 10px; color: #484f58; margin-left: -8px; }
+.header .status { font-size: 14px; color: #3fb950; }
+.tabs { display: flex; background: #161b22; border-bottom: 1px solid #30363d; padding: 0 24px; }
+.tab { padding: 12px 28px; cursor: pointer; color: #8b949e; border-bottom: 2px solid transparent; font-size: 16px; font-weight: 500; }
+.tab.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+.tab:hover { color: #c9d1d9; }
+.content { padding: 20px; max-width: 1400px; margin: 0 auto; padding-bottom: 180px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
+.card h3 { font-size: 15px; color: #8b949e; margin-bottom: 8px; }
+.card .value { font-size: 28px; font-weight: 600; }
+.card .value.positive { color: #3fb950; }
+.card .value.negative { color: #f85149; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.badge.mature { background: #238636; color: #fff; }
+.badge.accepted { background: #238636; color: #fff; }
+.badge.pending { background: #1f6feb; color: #fff; }
+.badge.rejected { background: #da3633; color: #fff; }
+.btn { padding: 7px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+.btn-accept { background: #238636; color: #fff; }
+.btn-reject { background: #da3633; color: #fff; }
+.btn-promote { background: #9e6a03; color: #fff; }
+.btn:hover { opacity: 0.85; }
+input, select { background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 7px 10px; border-radius: 4px; font-size: 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display: none; }
+.split { display: flex; gap: 16px; }
+.split-left { width: 400px; flex-shrink: 0; overflow-y: auto; max-height: calc(100vh - 160px); }
+.split-right { flex: 1; overflow-y: auto; max-height: calc(100vh - 160px); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>amuredo</h1>
+    <div class="tagline">Hypothesis Engine — works, regardless.</div>
+  </div>
+  <span class="subtitle">Hypothesis Engine</span>
+  <span class="status" id="status">Loading...</span>
+  <span style="margin-left:auto;font-size:11px;color:#3fb950" id="activity-count"></span>
+</div>
+<div id="activity-panel" style="position:fixed;bottom:0;left:0;right:0;height:140px;background:#0d1117;border-top:1px solid #30363d;z-index:100;overflow-y:auto;padding:8px 24px;font-size:11px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <span style="color:#7c3aed;font-weight:600">Live Activity</span>
+    <div style="display:flex;gap:8px">
+      <span style="cursor:pointer;font-size:10px;color:#7c3aed" id="activity-mode-events" onclick="setActivityMode('events')">Events</span>
+      <span style="cursor:pointer;font-size:10px;color:#8b949e" id="activity-mode-backend" onclick="setActivityMode('backend')">Backend Log</span>
+    </div>
+  </div>
+  <div id="activity-feed"></div>
+  <pre id="backend-log-feed" style="display:none;font-size:10px;color:#8b949e;white-space:pre-wrap;margin:0"></pre>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="research" onclick="showTab('research')">Research</div>
+  <div class="tab" data-tab="knowledge" onclick="showTab('knowledge')">Knowledge</div>
+  <div class="tab" data-tab="lab" onclick="showTab('lab')">Lab</div>
+  <div class="tab" data-tab="settings" onclick="showTab('settings')">Settings</div>
+</div>
+
+<div class="content">
+
+  <!-- ═══ RESEARCH (Framework) ═══ -->
+  <div id="tab-research">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input id="fw-idea" placeholder="아이디어 입력... (LLM이 Claim 구조 자동 생성)" style="flex:1">
+      <button class="btn btn-promote" onclick="fwAutoComplete()" id="fw-auto-btn">Auto-Generate</button>
+    </div>
+    <div id="fw-suggestion" style="display:none;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="fw-statement" placeholder="또는 직접 입력: Claim 명제..." style="flex:1">
+      <input id="fw-trigger" placeholder="Trigger: 재검토 조건..." style="width:250px">
+      <button class="btn btn-accept" onclick="fwCreateClaim()">Create</button>
+    </div>
+    <div class="grid" id="fw-stats"></div>
+    <div class="split">
+      <div class="split-left">
+        <div class="card" style="margin-bottom:8px">
+          <h3>Draft Claims</h3>
+          <div id="fw-drafts"></div>
+        </div>
+        <div class="card">
+          <h3 style="color:#3fb950">Knowledge (Accepted)</h3>
+          <div id="fw-knowledge"></div>
+        </div>
+      </div>
+      <div class="split-right">
+        <div id="fw-detail" class="card">
+          <p style="color:#8b949e">← Claim을 선택하세요</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ KNOWLEDGE ═══ -->
+  <div id="tab-knowledge" class="hidden">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="kb-search" placeholder="Search knowledge..." style="flex:1" onkeydown="if(event.key==='Enter')searchKnowledge()">
+      <button class="btn btn-accept" onclick="searchKnowledge()">Search</button>
+      <select id="kb-filter" onchange="loadKnowledge()">
+        <option value="all">All</option>
+        <option value="accepted">Accepted</option>
+        <option value="mature">Mature</option>
+        <option value="thesis">Thesis</option>
+        <option value="argument">Arguments</option>
+      </select>
+    </div>
+    <div class="grid" id="kb-stats"></div>
+    <div id="kb-list"></div>
+  </div>
+
+  <!-- ═══ LAB ═══ -->
+  <div id="tab-lab" class="hidden">
+    <div style="display:flex;gap:16px;height:calc(100vh - 140px)">
+      <div class="card split-left">
+        <h3>Sessions</h3>
+        <div style="margin:8px 0">
+          <input id="new-session-name" placeholder="Session name..." style="width:100%">
+          <select id="new-session-type" style="width:100%;margin-top:4px">
+            <option value="free">Free Lab</option>
+            <option value="claim">Claim Context</option>
+            <option value="reason">Reason Context</option>
+            <option value="experiment">Experiment Context</option>
+          </select>
+          <button class="btn btn-accept" onclick="createSession()" style="margin-top:4px;width:100%">Create</button>
+        </div>
+        <div id="session-list"></div>
+      </div>
+      <div class="card" style="flex:1;display:flex;flex-direction:column">
+        <div id="chat-header" style="padding-bottom:8px;border-bottom:1px solid #30363d;margin-bottom:8px">
+          <span style="color:#8b949e">Select or create a session</span>
+        </div>
+        <div id="chat-messages" style="flex:1;overflow-y:auto;padding:8px 0"></div>
+        <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid #30363d">
+          <input id="chat-input" placeholder="Type a message..." style="flex:1" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn btn-accept" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS ═══ -->
+  <div id="tab-settings" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h3>Adaptive Mode</h3>
+        <div id="adaptive-status" style="font-size:20px;font-weight:600;margin:8px 0"></div>
+        <button class="btn btn-accept" onclick="toggleAdaptive()">Toggle</button>
+      </div>
+      <div class="card">
+        <h3>Backend</h3>
+        <div id="backend-status"></div>
+        <button class="btn btn-accept" style="margin-top:8px;font-size:12px" onclick="startBackend()">Start Backend</button>
+      </div>
+      <div class="card">
+        <h3>Knowledge Stats</h3>
+        <div id="settings-stats"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>LLM Routing</h3>
+      <div id="llm-routing"></div>
+      <div style="margin-top:8px;padding:8px;background:#0d1117;border-radius:4px;border:1px solid #30363d">
+        <div style="font-size:11px;color:#8b949e;margin-bottom:4px">Add/Update Role</div>
+        <div style="display:flex;gap:4px;margin-bottom:4px">
+          <select id="llm-role" style="font-size:11px;width:100px">
+            <option>default</option><option>lab</option><option>judge</option><option>experiment</option><option>gate</option><option>canvas</option>
+          </select>
+          <select id="llm-provider" style="font-size:11px;width:140px" onchange="onProviderChange()">
+            <optgroup label="Cloud Providers">
+              <option value="claude_cli">Claude CLI</option>
+              <option value="claude_api">Claude API</option>
+              <option value="openai">OpenAI</option>
+              <option value="google">Google AI (Gemini)</option>
+              <option value="azure">Azure OpenAI</option>
+              <option value="groq">Groq</option>
+              <option value="together">Together AI</option>
+            </optgroup>
+            <optgroup label="Local Providers">
+              <option value="ollama">Ollama</option>
+              <option value="lmstudio">LM Studio</option>
+              <option value="openai_compatible">OpenAI Compatible</option>
+            </optgroup>
+            <option value="custom">Custom</option>
+          </select>
+          <input id="llm-model" placeholder="model (e.g. gpt-4o)" style="flex:1;font-size:11px">
+        </div>
+        <div style="display:flex;gap:4px" id="llm-extra-fields">
+          <input id="llm-apikey" placeholder="API key (optional)" style="flex:1;font-size:11px" type="password">
+          <input id="llm-apiurl" placeholder="Custom URL (optional)" style="width:150px;font-size:11px">
+          <button class="btn btn-accept" style="font-size:10px" onclick="saveLlmRole()">Save</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Tendencies & Hooks</h3>
+      <div id="settings-hooks"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Logs</h3>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn btn-accept" onclick="loadSettings()">Refresh</button>
+      </div>
+      <pre id="settings-log" style="background:#0d1117;padding:10px;border-radius:4px;font-size:11px;max-height:300px;overflow-y:auto;color:#8b949e"></pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '';
+async function api(path, opts) { const r = await fetch(API + path, opts); return r.json(); }
+
+function showTab(name) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.getAttribute('data-tab') === name));
+  if (name === 'research') loadFramework();
+  if (name === 'knowledge') loadKnowledge();
+  if (name === 'lab') loadSessions();
+  if (name === 'settings') loadSettings();
+}
+
+// ═══ RESEARCH (Framework) ═════════════════════════════════════════
+let fwSelectedClaim = null;
+
+async function loadFramework() {
+  // Update status bar
+  try {
+    const ov = await api('/api/dashboard/overview');
+    const k = ov.knowledge;
+    const backendAlive = ov.backend_server?.alive ?? ov.julia_server?.alive ?? false;
+    document.getElementById('status').textContent = `${k.n_claims} claims | ${k.n_knowledge} knowledge | ${k.n_reasons} reasons | Backend: ${backendAlive?'ON':'OFF'}`;
+  } catch(e) {}
+
+  const d = await api('/api/framework/claims');
+  // Stats
+  document.getElementById('fw-stats').innerHTML = [
+    {label:'Draft Claims', value:d.n_drafts},
+    {label:'Knowledge', value:d.n_knowledge, cls:'positive'},
+  ].map(c => `<div class="card"><h3>${c.label}</h3><div class="value ${c.cls||''}">${c.value}</div></div>`).join('');
+
+  // Drafts
+  document.getElementById('fw-drafts').innerHTML = (d.drafts||[]).length === 0
+    ? '<p style="color:#8b949e;font-size:12px">No drafts</p>'
+    : (d.drafts||[]).map(c => {
+      const wsColors = {running:'#f0883e',needs_verdict:'#1f6feb',designed:'#8b949e',done:'#3fb950',idle:'#484f58'};
+      const wsIcons = {running:'⏳',needs_verdict:'⚖️',designed:'📋',done:'✅',idle:'💤'};
+      const ws = c.work_status||'idle';
+      return `<div style="padding:8px;border-bottom:1px solid #21262d;cursor:pointer;border-left:3px solid ${wsColors[ws]||'#484f58'}" onclick="fwSelectClaim('${c.id}')"
+           onmouseenter="this.style.background='#1f6feb11'" onmouseleave="this.style.background='transparent'">
+        <div style="font-size:12px;display:flex;align-items:center;gap:4px">
+          <span>${wsIcons[ws]||''}</span>
+          <span style="flex:1">${c.statement.substring(0,55)}${c.statement.length>55?'...':''}</span>
+        </div>
+        <div style="font-size:10px;color:#8b949e;margin-top:2px;display:flex;gap:8px">
+          <span><span style="color:#3fb950">+${c.n_support}</span>/<span style="color:#f85149">-${c.n_rebut}</span></span>
+          ${c.n_experiments>0?`<span>${c.experiments_summary.interpreted||0}/${c.n_experiments} exp</span>`:''}
+          ${c.keywords?.length?`<span style="color:#484f58">${c.keywords.slice(0,3).join(',')}</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+  // Knowledge
+  document.getElementById('fw-knowledge').innerHTML = (d.knowledge||[]).length === 0
+    ? '<p style="color:#8b949e;font-size:12px">No knowledge yet</p>'
+    : (d.knowledge||[]).map(c => `
+      <div style="padding:8px;border-bottom:1px solid #21262d;border-left:3px solid #3fb950;cursor:pointer" onclick="fwSelectClaim('${c.id}')">
+        <div style="font-size:12px">${c.statement.substring(0,60)}${c.statement.length>60?'...':''}</div>
+        <div style="font-size:10px;color:#8b949e;margin-top:2px">${c.accept_reason||''}</div>
+      </div>`).join('');
+}
+
+async function fwAutoComplete() {
+  const idea = document.getElementById('fw-idea').value.trim();
+  if (!idea) return;
+  const btn = document.getElementById('fw-auto-btn');
+  const el = document.getElementById('fw-suggestion');
+  btn.textContent = 'Generating...'; btn.disabled = true;
+
+  // 로딩 표시
+  el.style.display = 'block';
+  el.innerHTML = `<div class="card" style="border:1px solid #7c3aed;text-align:center;padding:30px">
+    <div style="font-size:24px;margin-bottom:10px">⏳</div>
+    <div style="color:#7c3aed;font-size:16px;font-weight:600">Generating...</div>
+    <div style="color:#8b949e;margin-top:8px">RAG 검색 → LLM 호출 → Claim 구조 생성 중</div>
+    <div style="color:#484f58;margin-top:4px;font-size:13px">"${idea}"</div>
+    <div style="margin-top:12px"><div style="width:40px;height:40px;border:3px solid #30363d;border-top-color:#7c3aed;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto"></div></div>
+  </div>`;
+
+  const d = await api('/api/framework/claims/auto-complete', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea})});
+  btn.textContent = 'Auto-Generate'; btn.disabled = false;
+
+  if (d.error) { el.style.display = 'none'; alert('LLM 호출 실패: ' + d.error); return; }
+
+  // RAG hit: 유사한 기존 Claim 발견
+  if (d.status === 'rag_hit') {
+    let html = `<div class="card" style="border:1px solid #d29922">`;
+    html += `<h3 style="color:#d29922">유사한 기존 Claim 발견</h3>`;
+    html += `<div style="font-size:11px;color:#8b949e;margin-bottom:8px">아이디어: "${d.idea}"</div>`;
+    (d.rag_results||[]).forEach(r => {
+      const statusColor = r.status === 'Accepted' ? '#3fb950' : '#1f6feb';
+      html += `<div style="border-left:3px solid ${statusColor};padding:6px 10px;margin:4px 0;background:#161b22;border-radius:0 4px 4px 0;font-size:12px;cursor:pointer" onclick="fwSelectClaim('${r.claim_id}')">
+        <div><span class="badge" style="background:${statusColor};font-size:9px">${r.status}</span> ${r.statement}</div>
+        <div style="color:#8b949e;font-size:10px;margin-top:2px">score: ${r.score.toFixed(2)} | ${r.n_reasons} reasons</div>
+        ${r.matched_reasons?.map(mr => `<div style="color:#d2a8ff;font-size:10px;padding-left:8px">└ ${mr}</div>`).join('')||''}
+      </div>`;
+    });
+    html += `<div style="margin-top:8px;display:flex;gap:6px">
+      <button class="btn btn-promote" onclick="fwForceAutoComplete('${d.idea.replace(/'/g,"\\'")}')">그래도 새로 생성</button>
+      <button class="btn btn-reject" onclick="document.getElementById('fw-suggestion').style.display='none'">취소</button>
+    </div></div>`;
+    el.style.display = 'block';
+    el.innerHTML = html;
+    return;
+  }
+
+  const s = d.suggestion;
+
+  if (!s) {
+    el.style.display = 'block';
+    el.innerHTML = `<div class="card"><h3>Raw LLM 응답</h3><pre style="font-size:11px;white-space:pre-wrap;color:#8b949e">${(d.raw||'').substring(0,1000)}</pre></div>`;
+    return;
+  }
+
+  let html = `<div class="card" style="border:1px solid #7c3aed">`;
+  html += `<h3 style="color:#7c3aed">Auto-Generated Claim</h3>`;
+  html += `<div style="font-size:13px;margin:6px 0"><strong>Statement:</strong> ${s.statement}</div>`;
+  html += `<div style="font-size:12px;color:#8b949e;margin-bottom:8px"><strong>Trigger:</strong> ${s.trigger}</div>`;
+
+  // Support reasons
+  if (s.support_reasons?.length) {
+    html += `<div style="font-size:11px;color:#3fb950;font-weight:600;margin:4px 0">Support Reasons:</div>`;
+    s.support_reasons.forEach(r => {
+      html += `<div style="border-left:2px solid #3fb950;padding:4px 8px;margin:3px 0;font-size:11px">
+        <div>${r.statement}</div>
+        <div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div>
+      </div>`;
+    });
+  }
+
+  // Rebut reasons
+  if (s.rebut_reasons?.length) {
+    html += `<div style="font-size:11px;color:#f85149;font-weight:600;margin:4px 0">Rebut Reasons:</div>`;
+    s.rebut_reasons.forEach(r => {
+      html += `<div style="border-left:2px solid #f85149;padding:4px 8px;margin:3px 0;font-size:11px">
+        <div>${r.statement}</div>
+        <div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div>
+      </div>`;
+    });
+  }
+
+  // Suggested experiments
+  if (s.suggested_experiments?.length) {
+    html += `<div style="font-size:11px;color:#f0883e;font-weight:600;margin:4px 0">Suggested Experiments:</div>`;
+    s.suggested_experiments.forEach(e => {
+      html += `<div style="border-left:2px solid #f0883e;padding:4px 8px;margin:3px 0;font-size:10px">
+        <div>${e.description}</div>
+        <div style="color:#8b949e">if_true: ${e.if_true}</div>
+        <div style="color:#8b949e">if_false: ${e.if_false}</div>
+      </div>`;
+    });
+  }
+
+  html += `<div style="margin-top:8px;display:flex;gap:6px">
+    <button class="btn btn-accept" onclick="fwApplySuggestion()">Apply → Create Claim + Reasons</button>
+    <button class="btn btn-reject" onclick="document.getElementById('fw-suggestion').style.display='none'">Dismiss</button>
+  </div>`;
+  html += `</div>`;
+
+  el.style.display = 'block';
+  el.innerHTML = html;
+
+  // Store suggestion for apply
+  window._fwSuggestion = s;
+}
+
+async function fwForceAutoComplete(idea) {
+  const btn = document.getElementById('fw-auto-btn');
+  btn.textContent = 'Generating...'; btn.disabled = true;
+  const d = await api('/api/framework/claims/auto-complete?force=1', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea})});
+  btn.textContent = 'Auto-Generate'; btn.disabled = false;
+  if (d.error) { alert('LLM 호출 실패: ' + d.error); return; }
+  // Reuse the same rendering logic
+  const s = d.suggestion;
+  const el = document.getElementById('fw-suggestion');
+  if (!s) {
+    el.innerHTML = `<div class="card"><h3>Raw LLM 응답</h3><pre style="font-size:11px;white-space:pre-wrap;color:#8b949e">${(d.raw||'').substring(0,1000)}</pre></div>`;
+    return;
+  }
+  // Render suggestion (same as fwAutoComplete)
+  let html = `<div class="card" style="border:1px solid #7c3aed"><h3 style="color:#7c3aed">Auto-Generated Claim</h3>`;
+  html += `<div style="font-size:13px;margin:6px 0"><strong>Statement:</strong> ${s.statement}</div>`;
+  html += `<div style="font-size:12px;color:#8b949e;margin-bottom:8px"><strong>Trigger:</strong> ${s.trigger}</div>`;
+  if (s.support_reasons?.length) { html += `<div style="font-size:11px;color:#3fb950;font-weight:600;margin:4px 0">Support:</div>`; s.support_reasons.forEach(r => { html += `<div style="border-left:2px solid #3fb950;padding:4px 8px;margin:3px 0;font-size:11px"><div>${r.statement}</div><div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div></div>`; }); }
+  if (s.rebut_reasons?.length) { html += `<div style="font-size:11px;color:#f85149;font-weight:600;margin:4px 0">Rebut:</div>`; s.rebut_reasons.forEach(r => { html += `<div style="border-left:2px solid #f85149;padding:4px 8px;margin:3px 0;font-size:11px"><div>${r.statement}</div><div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div></div>`; }); }
+  html += `<div style="margin-top:8px;display:flex;gap:6px"><button class="btn btn-accept" onclick="fwApplySuggestion()">Apply</button><button class="btn btn-reject" onclick="document.getElementById('fw-suggestion').style.display='none'">Dismiss</button></div></div>`;
+  el.innerHTML = html;
+  window._fwSuggestion = s;
+}
+
+async function fwApplySuggestion() {
+  const s = window._fwSuggestion;
+  if (!s) return;
+  const d = await api('/api/framework/claims/apply-suggestion', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    statement: s.statement,
+    trigger: s.trigger,
+    keywords: s.keywords || [],
+    support_reasons: s.support_reasons || [],
+    rebut_reasons: s.rebut_reasons || [],
+    suggested_experiments: s.suggested_experiments || [],
+  })});
+  if (d.error) { alert(d.error); return; }
+  document.getElementById('fw-suggestion').style.display = 'none';
+  document.getElementById('fw-idea').value = '';
+  loadFramework();
+  if (d.claim_id) fwSelectClaim(d.claim_id);
+}
+
+async function fwCreateClaim() {
+  const statement = document.getElementById('fw-statement').value.trim();
+  const trigger = document.getElementById('fw-trigger').value.trim();
+  if (!statement || !trigger) return;
+  const d = await api('/api/framework/claims', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({statement,trigger})});
+  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
+  document.getElementById('fw-statement').value = '';
+  document.getElementById('fw-trigger').value = '';
+  loadFramework();
+  if (d.id) fwSelectClaim(d.id);
+}
+
+async function fwSelectClaim(id) {
+  fwSelectedClaim = id;
+  const d = await api('/api/framework/claims/' + id);
+  if (d.error) return;
+  const c = d.claim;
+  const reasons = d.reasons || [];
+  const check = d.structural_check || {};
+
+  const supportReasons = reasons.filter(r => r.reason_type === 'Support');
+  const rebutReasons = reasons.filter(r => r.reason_type === 'Rebut');
+
+  let html = `<h3 style="color:#7c3aed;margin-bottom:8px">${c.statement}</h3>`;
+  html += `<div style="font-size:11px;color:#8b949e;margin-bottom:12px">Trigger: ${c.trigger}</div>`;
+  html += `<div style="margin-bottom:8px"><span class="badge ${c.status === 'Accepted' ? 'accepted' : c.status === 'Rejected' ? 'rejected' : 'pending'}">${c.status}</span></div>`;
+
+  // Structural check
+  if (check.errors?.length || check.warnings?.length) {
+    html += `<div style="background:#${check.passed?'23863622':'da363322'};border:1px solid #${check.passed?'238636':'da3633'};border-radius:6px;padding:8px;margin-bottom:12px;font-size:11px">`;
+    html += `<div style="font-weight:600;margin-bottom:4px">${check.passed?'Gate: PASS':'Gate: FAIL'}</div>`;
+    (check.errors||[]).forEach(e => { html += `<div style="color:#f85149">- ${e}</div>`; });
+    (check.warnings||[]).forEach(w => { html += `<div style="color:#d29922">- ${w}</div>`; });
+    html += `</div>`;
+  }
+
+  // Support reasons
+  html += `<h3 style="color:#3fb950;font-size:12px;margin:8px 0 4px">Support (${supportReasons.length})</h3>`;
+  supportReasons.forEach(r => {
+    html += `<div style="border-left:3px solid #3fb950;padding:6px 10px;margin:4px 0;background:#161b22;border-radius:0 4px 4px 0;font-size:12px">`;
+    html += `<div>${r.statement}</div>`;
+    html += `<div style="color:#8b949e;font-size:10px;margin-top:2px">Bridge: ${r.bridge}</div>`;
+    if (r.evidences?.length) { html += `<div style="font-size:10px;margin-top:2px">${r.evidences.map(e => `<span class="badge" style="background:#30363d;margin:1px">${e.tag}: ${e.description.substring(0,30)}</span>`).join('')}</div>`; }
+    html += `<div style="margin-top:4px;display:flex;gap:4px">
+      <input id="ev-desc-${r.id}" placeholder="Evidence..." style="flex:1;font-size:10px">
+      <select id="ev-tag-${r.id}" style="font-size:10px"><option>backtest</option><option>live</option><option>intuition</option><option>literature</option></select>
+      <button class="btn btn-accept" style="font-size:9px;padding:2px 6px" onclick="fwAddEvidence('${r.id}')">+Ev</button>
+      <button class="btn btn-promote" style="font-size:9px;padding:2px 6px" onclick="fwToggleExpForm('${r.id}')">+Exp</button>
+    </div>`;
+    // Experiment form (hidden by default)
+    html += `<div id="exp-form-${r.id}" style="display:none;margin-top:6px;padding:6px;background:#0d1117;border-radius:4px;border:1px solid #30363d">
+      <div style="font-size:10px;color:#8b949e;margin-bottom:4px">Design Experiment</div>
+      <select id="exp-method-${r.id}" style="width:100%;font-size:10px;margin-bottom:3px">
+        <option value="distributional">Distributional (분포 분석)</option>
+        <option value="conditional">Conditional (조건부 분석)</option>
+        <option value="cross_sectional" selected>Cross-sectional (IC/rank)</option>
+        <option value="dose_response">Dose-response (단조성)</option>
+        <option value="regime">Regime (레짐별 안정성)</option>
+        <option value="temporal">Temporal (시간 안정성)</option>
+        <option value="multi_horizon">Multi-horizon (IC decay)</option>
+        <option value="entry_exit">Entry-exit (진입/청산)</option>
+        <option value="backtest">Backtest (수익률)</option>
+      </select>
+      <input id="exp-desc-${r.id}" placeholder="실험 설명..." style="width:100%;font-size:10px;margin-bottom:3px">
+      <input id="exp-true-${r.id}" placeholder="if_true: Reason이 참이면..." style="width:100%;font-size:10px;margin-bottom:3px">
+      <input id="exp-false-${r.id}" placeholder="if_false: Reason이 거짓이면..." style="width:100%;font-size:10px;margin-bottom:3px">
+      <input id="exp-output-${r.id}" placeholder="expected_output: 기대하는 통계량/차트..." style="width:100%;font-size:10px;margin-bottom:3px">
+      <button class="btn btn-accept" style="font-size:9px" onclick="fwCreateExp('${r.id}')">Create Experiment</button>
+    </div>`;
+    // Show existing experiments
+    html += `<div id="exp-list-${r.id}" style="margin-top:4px"></div>`;
+    html += `</div>`;
+  });
+
+  // Rebut reasons
+  html += `<h3 style="color:#f85149;font-size:12px;margin:8px 0 4px">Rebut (${rebutReasons.length})</h3>`;
+  rebutReasons.forEach(r => {
+    html += `<div style="border-left:3px solid #f85149;padding:6px 10px;margin:4px 0;background:#161b22;border-radius:0 4px 4px 0;font-size:12px">`;
+    html += `<div>${r.statement}</div>`;
+    html += `<div style="color:#8b949e;font-size:10px;margin-top:2px">Bridge: ${r.bridge}</div>`;
+    if (r.evidences?.length) { html += `<div style="font-size:10px;margin-top:2px">${r.evidences.map(e => `<span class="badge" style="background:#30363d;margin:1px">${e.tag}: ${e.description.substring(0,30)}</span>`).join('')}</div>`; }
+    html += `<div id="exp-list-${r.id}" style="margin-top:4px"></div>`;
+    html += `</div>`;
+  });
+
+  // Load experiments for all reasons after render
+  setTimeout(() => { reasons.forEach(r => fwLoadExps(r.id)); }, 100);
+
+  // Add reason form
+  html += `<div style="margin-top:12px;padding:10px;background:#0d1117;border-radius:6px;border:1px solid #30363d">
+    <div style="font-size:11px;color:#8b949e;margin-bottom:6px">Add Reason</div>
+    <div style="display:flex;gap:4px;margin-bottom:4px">
+      <select id="fw-rtype" style="font-size:11px"><option value="support">Support</option><option value="rebut">Rebut</option></select>
+      <input id="fw-rstatement" placeholder="Statement..." style="flex:1;font-size:11px">
+    </div>
+    <div style="display:flex;gap:4px">
+      <input id="fw-rbridge" placeholder="Bridge: 왜 이 reason이 claim을 지지/반박하는가..." style="flex:1;font-size:11px">
+      <button class="btn btn-accept" style="font-size:10px" onclick="fwAddReason()">Add</button>
+    </div>
+  </div>`;
+
+  // Action buttons (only for Draft)
+  if (c.status === 'Draft') {
+    html += `<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="fw-verdict-reason" placeholder="Accept/Reject 이유..." style="flex:1;min-width:200px">
+      <button class="btn btn-accept" onclick="fwAccept()" ${d.ready_to_accept?'':'disabled style="opacity:0.5"'}>Accept → Knowledge</button>
+      <button class="btn btn-reject" onclick="fwReject()">Reject</button>
+      <button class="btn btn-promote" onclick="fwRunAll()">Run All</button>
+      <button class="btn" style="background:#1f6feb;color:#fff" onclick="fwOpenLab()">Lab</button>
+      <button class="btn" style="background:#484f58;color:#f85149" onclick="fwDelete()">Delete</button>
+    </div>`;
+    if (!d.ready_to_accept) {
+      html += `<div style="font-size:10px;color:#d29922;margin-top:4px">Gate 미통과 — support Reason + Evidence 추가 필요</div>`;
+    }
+  }
+
+  document.getElementById('fw-detail').innerHTML = html;
+}
+
+async function fwAddReason() {
+  if (!fwSelectedClaim) return;
+  const reason_type = document.getElementById('fw-rtype').value;
+  const statement = document.getElementById('fw-rstatement').value.trim();
+  const bridge = document.getElementById('fw-rbridge').value.trim();
+  if (!statement || !bridge) return;
+  const d = await api('/api/framework/reasons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({claim_id:fwSelectedClaim,reason_type,statement,bridge})});
+  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
+  fwSelectClaim(fwSelectedClaim);
+  loadFramework();
+}
+
+async function fwAddEvidence(reasonId) {
+  const description = document.getElementById('ev-desc-'+reasonId).value.trim();
+  const tag = document.getElementById('ev-tag-'+reasonId).value;
+  if (!description) return;
+  const d = await api('/api/framework/evidence', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason_id:reasonId,tag,description})});
+  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
+  fwSelectClaim(fwSelectedClaim);
+}
+
+async function fwAccept() {
+  if (!fwSelectedClaim) return;
+  const reason = document.getElementById('fw-verdict-reason').value.trim();
+  if (!reason) { alert('Accept 이유를 입력하세요'); return; }
+  const d = await api('/api/framework/claims/'+fwSelectedClaim+'/accept', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+  if (d.error) { alert(d.error + '\n' + JSON.stringify(d.gate||d.failed_reasons||'',null,2)); return; }
+  alert('Knowledge로 격상 완료!');
+  fwSelectClaim(fwSelectedClaim);
+  loadFramework();
+}
+
+function fwToggleExpForm(reasonId) {
+  const el = document.getElementById('exp-form-'+reasonId);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  // Load existing experiments
+  fwLoadExps(reasonId);
+}
+
+async function fwLoadExps(reasonId) {
+  const d = await api('/api/framework/experiments/reason/'+reasonId);
+  const el = document.getElementById('exp-list-'+reasonId);
+  if (!el) return;
+  const exps = d.experiments || [];
+  if (exps.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = exps.map(e => {
+    const sc = {Designed:'#8b949e',Running:'#f0883e',Completed:'#1f6feb',Interpreted:'#3fb950'}[e.status]||'#8b949e';
+    const methodIcons = {Distributional:'📊',Conditional:'🔀',CrossSectional:'📈',DoseResponse:'📐',Regime:'🌦',Temporal:'⏳',MultiHorizon:'🎯',EntryExit:'🚪',Backtest:'💰'};
+    const mi = methodIcons[e.method] || '🔬';
+    let h = `<div style="font-size:10px;padding:4px 6px;margin:2px 0;border-left:2px solid ${sc};background:#161b22;border-radius:0 3px 3px 0">`;
+    h += `<div>${mi} <span style="color:#d2a8ff">[${e.method}]</span> ${e.description} <span style="color:${sc}">[${e.status}]</span></div>`;
+    if (e.status === 'Completed' && !e.verdict) {
+      const r = e.result || {};
+      const hint = r.verdict_hint || '';
+      const isSup = hint.includes('지지') || hint.includes('robust') || hint.includes('단조') || hint.includes('안정');
+      const isWeak = hint.includes('약화') || hint.includes('미유의') || hint.includes('불안정') || hint.includes('decay') || hint.includes('부족');
+      const recColor = isSup ? '#3fb950' : isWeak ? '#f85149' : '#d29922';
+      const recLabel = isSup ? '지지 추천' : isWeak ? '약화 추천' : '판단 필요';
+      h += `<div style="margin-top:4px;padding:5px 8px;background:#0d1117;border-radius:4px;border:1px solid ${recColor}44">`;
+      h += `<div style="color:${recColor};font-size:11px;font-weight:600">AI 추천: ${recLabel}</div>`;
+      if (hint) h += `<div style="font-size:10px;color:#8b949e;margin:2px 0">${hint}</div>`;
+      if (r.summary) h += `<div style="font-size:10px;color:#8b949e">${r.summary}</div>`;
+      h += `<div style="margin-top:4px;display:flex;gap:4px;align-items:center">
+        <input id="vrd-exp-${e.id}" placeholder="verdict 설명..." style="flex:1;font-size:11px" value="${hint.replace(/"/g,'&quot;')}">
+        <button class="btn btn-accept" style="font-size:10px;padding:3px 8px" onclick="fwVerdict('${e.id}',true)">지지</button>
+        <button class="btn btn-reject" style="font-size:10px;padding:3px 8px" onclick="fwVerdict('${e.id}',false)">약화</button>
+      </div></div>`;
+    }
+    if (e.verdict) {
+      h += `<div style="color:${e.verdict.supports_reason?'#3fb950':'#f85149'};font-size:9px">${e.verdict.supports_reason?'지지':'약화'}: ${e.verdict.explanation}</div>`;
+      if (e.verdict.gaps?.length) h += `<div style="color:#d29922;font-size:9px">Gaps: ${e.verdict.gaps.join(', ')}</div>`;
+    }
+    // Show structured result if available
+    if (e.status === 'Completed' || e.status === 'Interpreted') {
+      h += `<div style="cursor:pointer;color:#7c3aed;font-size:9px;margin-top:2px" onclick="fwToggleResult('${e.id}')">결과 보기 ▼</div>`;
+      h += `<div id="result-${e.id}" style="display:none"></div>`;
+    }
+    if (e.status === 'Designed') {
+      h += `<button class="btn btn-promote" style="font-size:8px;padding:1px 4px;margin-top:2px" onclick="fwSubmitResult('${e.id}')">결과 입력</button>`;
+    }
+    h += `</div>`;
+    return h;
+  }).join('');
+}
+
+async function fwCreateExp(reasonId) {
+  const method = document.getElementById('exp-method-'+reasonId).value;
+  const description = document.getElementById('exp-desc-'+reasonId).value.trim();
+  const if_true = document.getElementById('exp-true-'+reasonId).value.trim();
+  const if_false = document.getElementById('exp-false-'+reasonId).value.trim();
+  const expected_output = document.getElementById('exp-output-'+reasonId).value.trim();
+  if (!description || !if_true || !if_false || !expected_output) { alert('모든 필드를 입력하세요'); return; }
+  let config = {source:"dashboard", method};
+  if (method === 'multi_horizon') config.horizons = ["5m","15m","1h","4h","1d","3d","7d"];
+  if (method === 'entry_exit') { config.cached_horizons = ["5m","15m","1h","4h","1d"]; config.exit_conditions = []; config.max_hold_bars = 288; }
+  const d = await api('/api/framework/experiments', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason_id:reasonId,method,description,if_true,if_false,expected_output,config})});
+  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
+  document.getElementById('exp-form-'+reasonId).style.display='none';
+  fwSelectClaim(fwSelectedClaim);
+}
+
+async function fwSubmitResult(expId) {
+  const result = prompt('실험 결과 (JSON 또는 텍스트):');
+  if (!result) return;
+  let parsed;
+  try { parsed = JSON.parse(result); } catch { parsed = {text: result}; }
+  await api('/api/framework/experiments/'+expId+'/result', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({result:parsed})});
+  fwSelectClaim(fwSelectedClaim);
+}
+
+async function fwVerdict(expId, supports) {
+  const explanation = document.getElementById('vrd-exp-'+expId)?.value.trim();
+  if (!explanation) { alert('설명을 입력하세요'); return; }
+  const gapsStr = prompt('Gaps (콤마 구분, 없으면 빈칸):') || '';
+  const gaps = gapsStr ? gapsStr.split(',').map(s=>s.trim()).filter(s=>s) : [];
+  const d = await api('/api/framework/experiments/'+expId+'/verdict', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({supports_reason:supports,explanation,gaps})});
+  if (d.error) { alert(d.error + '\n' + JSON.stringify(d.gate||'',null,2)); return; }
+  alert('Verdict 완료 — Evidence 자동 생성됨');
+  fwSelectClaim(fwSelectedClaim);
+}
+
+function fwToggleResult(expId) {
+  const el = document.getElementById('result-'+expId);
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  // Fetch experiment result
+  fwLoadResult(expId, el);
+}
+
+async function fwLoadResult(expId, el) {
+  // Find result from the claim detail data
+  const d = await api('/api/framework/claims/'+fwSelectedClaim);
+  let result = null;
+  for (const r of d.reasons || []) {
+    // Check experiments via API
+  }
+  // Get directly from experiments list
+  const claims = await api('/api/framework/claims');
+  // Simpler: fetch all experiments for all reasons and find matching
+  for (const r of (d.reasons||[])) {
+    const exps = await api('/api/framework/experiments/reason/'+r.id);
+    for (const e of (exps.experiments||[])) {
+      if (e.id === expId) { result = e.result; break; }
+    }
+    if (result) break;
+  }
+
+  if (!result) { el.innerHTML = '<div style="color:#8b949e;font-size:10px">결과 없음</div>'; return; }
+
+  const verdictColor = (result.verdict_hint||'').includes('지지') ? '#3fb950' :
+                       (result.verdict_hint||'').includes('약화') ? '#f85149' : '#d29922';
+
+  let html = `<div style="margin-top:4px;padding:6px;background:#0d1117;border-radius:4px;border:1px solid #30363d;font-size:10px">`;
+  html += `<div style="color:#7c3aed;font-weight:600">[${result.method||'?'}] ${result.summary||''}</div>`;
+  html += `<div style="color:${verdictColor};margin:3px 0;font-weight:600">${result.verdict_hint||''}</div>`;
+
+  const metrics = result.metrics || {};
+  const keys = Object.keys(metrics);
+  if (keys.length > 0) {
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">`;
+    for (const k of keys) {
+      const v = typeof metrics[k] === 'number' ? metrics[k].toFixed(4) : metrics[k];
+      html += `<span style="background:#161b22;padding:2px 6px;border-radius:3px"><span style="color:#8b949e">${k}:</span> ${v}</span>`;
+    }
+    html += `</div>`;
+  }
+
+  if (result.details) {
+    html += `<div style="color:#8b949e;margin-top:4px">${result.details}</div>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+async function fwOpenLab() {
+  if (!fwSelectedClaim) return;
+  // Create a Lab session with claim context
+  const claim = await api('/api/framework/claims/'+fwSelectedClaim);
+  const name = (claim.claim?.statement || 'Claim').substring(0, 30) + '...';
+  const d = await api('/api/chat/sessions', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    name: name,
+    target_type: 'claim',
+    target_id: fwSelectedClaim,
+  })});
+  if (d.id) {
+    showTab('lab');
+    await loadSessions();
+    await selectSession(d.id);
+  }
+}
+
+async function fwDelete() {
+  if (!fwSelectedClaim) return;
+  if (!confirm('이 Claim과 모든 Reasons/Experiments를 삭제합니다. 계속?')) return;
+  await api('/api/framework/claims/'+fwSelectedClaim, {method:'DELETE'});
+  fwSelectedClaim = null;
+  document.getElementById('fw-detail').innerHTML = '<p style="color:#8b949e">← Claim을 선택하세요</p>';
+  loadFramework();
+}
+
+async function fwRunAll() {
+  if (!fwSelectedClaim) return;
+  const d = await api('/api/framework/claims/'+fwSelectedClaim+'/run-all', {method:'POST'});
+  if (d.n_started === 0) { alert('실행할 Designed 실험이 없습니다'); return; }
+  fwSelectClaim(fwSelectedClaim);
+  loadFramework();
+}
+
+async function fwReject() {
+  if (!fwSelectedClaim) return;
+  const reason = document.getElementById('fw-verdict-reason').value.trim() || 'rejected';
+  const d = await api('/api/framework/claims/'+fwSelectedClaim+'/reject', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+  fwSelectClaim(fwSelectedClaim);
+  loadFramework();
+}
+
+// ═══ KNOWLEDGE ═════════════════════════════════════════════════════
+async function loadKnowledge() {
+  const filter = document.getElementById('kb-filter').value;
+  const all = await api('/api/knowledge/insights/pending');
+  // Get all insights via search
+  const search = await api('/api/knowledge/insights/search', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'',top_k:200})});
+
+  // Merge: pending + accepted
+  let insights = all.pending || [];
+  // Add accepted from the DB via search results
+  const searchResults = (search.results||[]).map(r => ({id:r.insight_id, text:r.text, tags:r.tags, status:r.status, maturity:r.maturity, score:r.score}));
+
+  // Combine unique
+  const seen = new Set(insights.map(i => i.id));
+  for (const r of searchResults) { if (!seen.has(r.id)) { insights.push(r); seen.add(r.id); } }
+
+  // Filter
+  if (filter === 'accepted') insights = insights.filter(i => i.status === 'Accepted');
+  else if (filter === 'mature') insights = insights.filter(i => i.maturity === 'Mature');
+  else if (filter === 'thesis') insights = insights.filter(i => (i.tags||[]).includes('thesis'));
+  else if (filter === 'argument') insights = insights.filter(i => (i.tags||[]).some(t => t.includes('argument')));
+
+  // Stats
+  const nTotal = insights.length;
+  const nAccepted = insights.filter(i => i.status === 'Accepted').length;
+  const nThesis = insights.filter(i => (i.tags||[]).includes('thesis')).length;
+  const nArgs = insights.filter(i => (i.tags||[]).some(t => t.includes('argument'))).length;
+
+  document.getElementById('kb-stats').innerHTML = [
+    {label:'Total', value:nTotal},
+    {label:'Accepted', value:nAccepted, cls:'positive'},
+    {label:'Theses', value:nThesis},
+    {label:'Arguments', value:nArgs},
+  ].map(c => `<div class="card"><h3>${c.label}</h3><div class="value ${c.cls||''}">${c.value}</div></div>`).join('');
+
+  // Render
+  document.getElementById('kb-list').innerHTML = insights.length === 0
+    ? '<p style="color:#8b949e">No knowledge yet</p>'
+    : insights.map(i => {
+      const tags = (i.tags||[]);
+      const isThesis = tags.includes('thesis');
+      const isFor = tags.includes('argument-for');
+      const isAgainst = tags.includes('argument-against');
+      const isPremise = tags.includes('premise');
+      const isExp = tags.includes('experiment');
+
+      const borderColor = isThesis ? '#7c3aed' : isFor ? '#3fb950' : isAgainst ? '#f85149' : isPremise ? '#d2a8ff' : isExp ? '#f0883e' : '#30363d';
+      const icon = isThesis ? '📋' : isFor ? '✓' : isAgainst ? '✗' : isPremise ? '💡' : isExp ? '🔬' : '📝';
+      const statusBadge = i.status ? `<span class="badge ${(i.status||'').toLowerCase()}">${i.status}</span>` : '';
+
+      return `<div style="border-left:3px solid ${borderColor};padding:10px 14px;margin:6px 0;background:#161b22;border-radius:0 6px 6px 0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span>${icon}</span>
+          <span style="font-size:13px;flex:1">${i.text}</span>
+          ${statusBadge}
+        </div>
+        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
+          ${tags.map(t => `<span style="background:#30363d;padding:1px 6px;border-radius:3px;font-size:10px">${t}</span>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+}
+
+async function searchKnowledge() {
+  const q = document.getElementById('kb-search').value.trim();
+  if (!q) { loadKnowledge(); return; }
+  const d = await api('/api/knowledge/insights/search', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q,top_k:20})});
+  document.getElementById('kb-list').innerHTML = (d.results||[]).map(r =>
+    `<div style="border-left:3px solid #7c3aed;padding:10px 14px;margin:6px 0;background:#161b22;border-radius:0 6px 6px 0">
+      <div style="font-size:13px">${r.text}</div>
+      <div style="font-size:10px;color:#8b949e;margin-top:4px">score: ${r.score.toFixed(2)} | ${r.tags.join(', ')}</div>
+    </div>`
+  ).join('') || '<p style="color:#8b949e">No results</p>';
+}
+
+// ═══ LAB ═══════════════════════════════════════════════════════════
+let currentSessionId = null;
+let pollingInterval = null;
+
+function renderMd(text) {
+  if (!text) return '';
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre style="background:#161b22;padding:8px;border-radius:4px;font-size:11px"><code>$2</code></pre>')
+    .replace(/`([^`]+)`/g, '<code style="background:#161b22;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^### (.+)$/gm, '<div style="font-size:13px;font-weight:600;margin:6px 0 3px">$1</div>')
+    .replace(/^## (.+)$/gm, '<div style="font-size:14px;font-weight:600;margin:8px 0 3px">$1</div>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:10px">• $1</div>')
+    .replace(/\n\n/g, '<div style="height:6px"></div>')
+    .replace(/\n/g, '<br>');
+}
+
+async function createSession() {
+  const name = document.getElementById('new-session-name').value || 'New';
+  const type = document.getElementById('new-session-type').value;
+  const d = await api('/api/chat/sessions', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,target_type:type,target_id:null})});
+  document.getElementById('new-session-name').value = '';
+  loadSessions();
+  if (d.id) selectSession(d.id);
+}
+async function loadSessions() {
+  const d = await api('/api/chat/sessions');
+  document.getElementById('session-list').innerHTML = (d.sessions||[]).map(s => {
+    const active = s.id===currentSessionId;
+    return `<div style="padding:8px;cursor:pointer;border-radius:4px;margin:3px 0;background:${active?'#1f6feb22':'#0d1117'};border:1px solid ${active?'#1f6feb':'#21262d'}" onclick="selectSession('${s.id}')">
+      <span style="font-size:12px">${s.name}</span>
+      <span style="cursor:pointer;float:right;color:#f85149;font-size:11px" onclick="event.stopPropagation();deleteSession('${s.id}')">x</span>
+    </div>`;
+  }).join('');
+}
+async function selectSession(id) {
+  currentSessionId = id;
+  loadSessions();
+  const d = await api('/api/chat/sessions/'+id);
+  document.getElementById('chat-header').innerHTML = `<strong>${d.session?.name}</strong>`;
+  const msgs = (d.messages||[]);
+  document.getElementById('chat-messages').innerHTML = msgs.map(m => `
+    <div style="margin:6px 0;${m.role==='user'?'text-align:right':''}">
+      <div style="display:inline-block;max-width:80%;padding:8px 10px;border-radius:8px;background:${m.role==='user'?'#1f6feb':'#21262d'};text-align:left">
+        <div style="font-size:12px;line-height:1.4">${m.content ? renderMd(m.content) : (m.status==='Processing'?'<span style="color:#d2a8ff">Processing...</span>':'')}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('chat-messages').scrollTop = 999999;
+}
+async function sendChat() {
+  if (!currentSessionId) return;
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim(); if (!msg) return; input.value = '';
+  const d = await api('/api/chat/send', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSessionId,content:msg})});
+  const sess = await api('/api/chat/sessions/'+currentSessionId); selectSession(currentSessionId);
+  if (d.assistant_msg_id) {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(async () => {
+      const m = await api('/api/chat/messages/'+d.assistant_msg_id);
+      if (m.status==='Completed'||m.status==='Failed') { clearInterval(pollingInterval); selectSession(currentSessionId); }
+    }, 2000);
+  }
+}
+async function deleteSession(id) {
+  await api('/api/chat/sessions/'+id, {method:'DELETE'});
+  if (currentSessionId===id) currentSessionId=null;
+  loadSessions();
+}
+
+// ═══ SETTINGS ═════════════════════════════════════════════════════
+async function loadSettings() {
+  const ov = await api('/api/dashboard/overview');
+  const backend = await api('/api/backend/status');
+  const profile = await api('/api/adaptive/profile');
+
+  document.getElementById('adaptive-status').innerHTML = profile.adaptive_mode
+    ? '<span style="color:#3fb950">ON</span>' : '<span style="color:#8b949e">OFF</span>';
+
+  // Backend status card
+  let bhtml = `<div class="value ${backend.alive?'positive':'negative'}">${backend.alive?'Online':'Offline'}</div>`;
+  if (backend.type) bhtml += `<div style="font-size:11px;color:#8b949e;margin-top:4px">Type: ${backend.type}</div>`;
+  if (backend.url || backend.dir) bhtml += `<div style="font-size:11px;color:#8b949e">URL: ${backend.url || backend.dir || '-'}</div>`;
+  if (backend.command) bhtml += `<div style="font-size:11px;color:#8b949e">Cmd: ${backend.command}</div>`;
+  document.getElementById('backend-status').innerHTML = bhtml;
+
+  document.getElementById('settings-stats').innerHTML = `<div style="font-size:13px">
+    Claims: ${ov.knowledge.n_claims} | Knowledge: ${ov.knowledge.n_knowledge} | Reasons: ${ov.knowledge.n_reasons} | Experiments: ${ov.knowledge.n_fw_experiments}
+  </div>`;
+  loadLlmRouting();
+
+  const hooks = profile.hooks || [];
+  const tendencies = profile.tendencies || {};
+  document.getElementById('settings-hooks').innerHTML =
+    Object.entries(tendencies).map(([k,v]) => `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px">
+      <span style="color:#7c3aed">${k}:</span> <input value="${v}" style="width:70%" onchange="updateTendency('${k}',this.value)">
+    </div>`).join('') +
+    hooks.map((h,i) => `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px">
+      <input type="checkbox" ${h.active?'checked':''} onchange="updateHook(${i},this.checked)">
+      <span style="color:#8b949e">${h.trigger}:</span> ${h.instruction}
+    </div>`).join('');
+
+  try {
+    const blog = await api('/api/monitor/backend-log');
+    const rlog = await api('/api/monitor/rust-log');
+    document.getElementById('settings-log').textContent = '--- Backend ---\n' + (blog.log||'').slice(-500) + '\n\n--- Rust ---\n' + (rlog.log||'').slice(-500);
+  } catch(e) {}
+}
+async function toggleAdaptive() { await api('/api/adaptive/toggle', {method:'POST'}); loadSettings(); }
+
+async function startBackend() {
+  const d = await api('/api/backend/start', {method:'POST'});
+  if (d.error) { alert('Backend start failed: ' + d.error); return; }
+  alert('Backend start requested');
+  setTimeout(loadSettings, 2000);
+}
+
+// ═══ LLM ROUTING with Provider Presets ═══════════════════════════
+const PROVIDER_PRESETS = {
+  claude_cli: { model: '', url: '', needsKey: false, needsUrl: false },
+  claude_api: { model: 'claude-sonnet-4-20250514', url: '', needsKey: true, needsUrl: false },
+  openai: { model: 'gpt-4o', url: '', needsKey: true, needsUrl: false },
+  google: { model: 'gemini-2.0-flash', url: '', needsKey: true, needsUrl: false },
+  azure: { model: '', url: '', needsKey: true, needsUrl: true },
+  groq: { model: 'llama-3.1-70b-versatile', url: 'https://api.groq.com/openai/v1', needsKey: true, needsUrl: false },
+  together: { model: 'meta-llama/Llama-3-70b-chat-hf', url: 'https://api.together.xyz/v1', needsKey: true, needsUrl: false },
+  ollama: { model: 'llama3.1', url: 'http://localhost:11434', needsKey: false, needsUrl: false },
+  lmstudio: { model: 'default', url: 'http://localhost:1234', needsKey: false, needsUrl: false },
+  openai_compatible: { model: '', url: '', needsKey: false, needsUrl: true },
+  custom: { model: '', url: '', needsKey: false, needsUrl: true },
+};
+
+function onProviderChange() {
+  const provider = document.getElementById('llm-provider').value;
+  const preset = PROVIDER_PRESETS[provider];
+  if (!preset) return;
+
+  // Auto-fill model and URL
+  document.getElementById('llm-model').value = preset.model;
+  document.getElementById('llm-model').placeholder = preset.model ? `model (${preset.model})` : 'model name...';
+  document.getElementById('llm-apiurl').value = preset.url;
+
+  // Show/hide fields based on provider needs
+  const keyEl = document.getElementById('llm-apikey');
+  const urlEl = document.getElementById('llm-apiurl');
+
+  if (preset.needsKey) {
+    keyEl.style.display = '';
+    keyEl.placeholder = 'API key (required)';
+    keyEl.style.borderColor = '#d29922';
+  } else {
+    keyEl.style.display = '';
+    keyEl.placeholder = 'API key (not needed)';
+    keyEl.style.borderColor = '#30363d';
+    keyEl.value = '';
+  }
+
+  if (preset.needsUrl) {
+    urlEl.style.display = '';
+    urlEl.placeholder = 'API URL (required)';
+    urlEl.style.borderColor = '#d29922';
+  } else if (preset.url) {
+    urlEl.style.display = '';
+    urlEl.placeholder = `URL (${preset.url})`;
+    urlEl.style.borderColor = '#30363d';
+  } else {
+    urlEl.style.display = '';
+    urlEl.placeholder = 'Custom URL (optional)';
+    urlEl.style.borderColor = '#30363d';
+  }
+}
+
+async function loadLlmRouting() {
+  const d = await api('/api/framework/llm/routing');
+  const el = document.getElementById('llm-routing');
+  let html = '';
+  // Default
+  html += `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px;display:flex;align-items:center;gap:8px">
+    <span style="color:#7c3aed;width:80px;font-weight:600">default</span>
+    <span>${d.default?.provider||'claude_cli'}</span>
+    <span style="color:#8b949e">${d.default?.model||'(default)'}</span>
+    <span style="color:#3fb950;font-size:10px">${d.default?.api_key?'key set':'no key'}</span>
+  </div>`;
+  // Roles
+  const roles = d.roles || {};
+  for (const [role, cfg] of Object.entries(roles)) {
+    html += `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px;display:flex;align-items:center;gap:8px">
+      <span style="color:#d2a8ff;width:80px;font-weight:600">${role}</span>
+      <span>${cfg.provider}</span>
+      <span style="color:#8b949e">${cfg.model||'(default)'}</span>
+      <span style="color:#3fb950;font-size:10px">${cfg.api_key?'key set':'no key'}</span>
+      <span style="cursor:pointer;color:#f85149;font-size:10px;margin-left:auto" onclick="deleteLlmRole('${role}')">remove</span>
+    </div>`;
+  }
+  if (Object.keys(roles).length === 0) {
+    html += '<div style="padding:6px;font-size:11px;color:#8b949e">No role overrides — all using default</div>';
+  }
+  el.innerHTML = html;
+}
+
+async function saveLlmRole() {
+  const role = document.getElementById('llm-role').value;
+  const provider = document.getElementById('llm-provider').value;
+  const model = document.getElementById('llm-model').value;
+  const api_key = document.getElementById('llm-apikey').value || null;
+  const api_url = document.getElementById('llm-apiurl').value || null;
+  await api('/api/framework/llm/routing', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role,provider,model,api_key,api_url})});
+  document.getElementById('llm-model').value = '';
+  document.getElementById('llm-apikey').value = '';
+  document.getElementById('llm-apiurl').value = '';
+  loadLlmRouting();
+}
+
+async function deleteLlmRole(role) {
+  await api('/api/framework/llm/routing/'+role, {method:'DELETE'});
+  loadLlmRouting();
+}
+async function updateTendency(k,v) { await api('/api/adaptive/tendency', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,value:v})}); }
+async function updateHook(i,active) { await api('/api/adaptive/hook', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({index:i,active})}); }
+
+// ═══ ACTIVITY ═════════════════════════════════════════════════════
+let lastActivityId = 0;
+let activityPoll = null;
+
+async function loadActivity() {
+  const d = await api('/api/framework/activity?since=' + lastActivityId);
+  const feed = document.getElementById('activity-feed');
+  const events = d.events || [];
+  if (events.length === 0 && lastActivityId === 0) { feed.innerHTML = '<div style="color:#8b949e">No activity yet</div>'; return; }
+  document.getElementById('activity-count').textContent = `● Live`;
+
+  const catColors = {claim:'#7c3aed',reason:'#d2a8ff',experiment:'#f0883e',verdict:'#3fb950',gate:'#f85149',llm:'#d29922',search:'#1f6feb',system:'#8b949e'};
+  const catIcons = {claim:'📋',reason:'💡',experiment:'🔬',verdict:'⚖️',gate:'🚧',llm:'🤖',search:'🔍',system:'⚙️'};
+
+  events.forEach(e => {
+    const color = catColors[e.category] || '#8b949e';
+    const icon = catIcons[e.category] || '📝';
+    const time = new Date(e.timestamp).toLocaleTimeString();
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:3px 0;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:6px';
+    el.innerHTML = `<span style="color:#484f58;font-size:10px;width:60px">${time}</span>
+      <span>${icon}</span>
+      <span style="color:${color};font-size:10px;width:70px">[${e.category}]</span>
+      <span style="flex:1">${e.summary}</span>
+      ${e.detail ? `<span style="color:#8b949e;font-size:9px">${e.detail}</span>` : ''}`;
+    feed.insertBefore(el, feed.firstChild);
+    lastActivityId = Math.max(lastActivityId, e.id);
+  });
+}
+
+let activityMode = 'events';
+let backendLogBytes = 0;
+
+function setActivityMode(mode) {
+  activityMode = mode;
+  document.getElementById('activity-feed').style.display = mode === 'events' ? 'block' : 'none';
+  document.getElementById('backend-log-feed').style.display = mode === 'backend' ? 'block' : 'none';
+  document.getElementById('activity-mode-events').style.color = mode === 'events' ? '#7c3aed' : '#8b949e';
+  document.getElementById('activity-mode-backend').style.color = mode === 'backend' ? '#7c3aed' : '#8b949e';
+  if (mode === 'backend') loadBackendLog();
+}
+
+async function loadBackendLog() {
+  const d = await api('/api/backend/log?since_bytes=' + backendLogBytes);
+  if (d.log) {
+    const el = document.getElementById('backend-log-feed');
+    el.textContent += d.log;
+    el.scrollTop = el.scrollHeight;
+    backendLogBytes = d.total_bytes;
+  }
+}
+
+function startActivityPoll() {
+  activityPoll = setInterval(() => {
+    if (activityMode === 'events') loadActivity();
+    else loadBackendLog();
+  }, 3000);
+}
+function stopActivityPoll() { if (activityPoll) { clearInterval(activityPoll); activityPoll = null; } }
+
+// Init
+loadFramework();
+loadActivity();
+startActivityPoll();
+</script>
+</body>
+</html>
