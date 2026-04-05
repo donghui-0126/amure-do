@@ -1,3 +1,6 @@
+[workspace]
+members = [".", "crates/amure-db"]
+
 [package]
 name = "amure-do"
 version = "0.1.0"
@@ -14,6 +17,7 @@ name = "amure-do"
 path = "engine/main.rs"
 
 [dependencies]
+amure-db = { path = "crates/amure-db" }
 arrow = { version = "55", features = ["ipc"] }
 ndarray = { version = "0.16", features = ["rayon"] }
 rayon = "1.10"

@@ -62,6 +62,16 @@ async fn main() {
         }
     };
 
+    // Load graph DB
+    let graph_dir = std::path::PathBuf::from("data/amure_graph");
+    let graph = if graph_dir.join("nodes.json").exists() {
+        amure_db::graph::AmureGraph::load(&graph_dir).unwrap_or_default()
+    } else {
+        amure_db::graph::AmureGraph::new()
+    };
+    let graph_summary = graph.summary();
+    println!("Graph DB: {} nodes, {} edges", graph_summary.n_nodes, graph_summary.n_edges);
+
     println!("Ready in {:.2}s", t0.elapsed().as_secs_f64());
 
     // Activity log
@@ -88,6 +98,8 @@ async fn main() {
         activity,
         backend: Arc::new(RwLock::new(backend)),
         amure_config: Arc::new(RwLock::new(amure_config.clone())),
+        graph: Arc::new(RwLock::new(graph)),
+        synonyms: Arc::new(amure_db::synonym::SynonymDict::new()),
     };
     let app = build_router(state);
 
@@ -95,6 +107,7 @@ async fn main() {
     println!("\nServer listening on http://{}", addr);
     println!("  Dashboard: http://localhost:{}/", amure_config.server.port);
     println!("  Backend:   POST http://localhost:{}/api/backend/exec", amure_config.server.port);
+    println!("  Graph:     http://localhost:{}/graph", amure_config.server.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }

@@ -16,3 +16,4 @@ pub mod judge_v4;
 pub mod adaptive;
 pub mod strategy;
 pub mod framework_api;
+pub mod graph;

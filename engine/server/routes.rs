@@ -10,7 +10,7 @@ use crate::server::backend::Backend;
 use crate::config::AmureConfig;
 use super::activity::ActivityLog;
 
-use super::handlers::{query, knowledge, dashboard, external, chat, backend, canvas, monitor, evaluator, manager, judge, thesis_api, judge_v4, adaptive, strategy, framework_api};
+use super::handlers::{query, knowledge, dashboard, external, chat, backend, canvas, monitor, evaluator, manager, judge, thesis_api, judge_v4, adaptive, strategy, framework_api, graph};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -23,6 +23,8 @@ pub struct AppState {
     pub activity: ActivityLog,
     pub backend: Arc<RwLock<Backend>>,
     pub amure_config: Arc<RwLock<AmureConfig>>,
+    pub graph: Arc<RwLock<amure_db::graph::AmureGraph>>,
+    pub synonyms: Arc<amure_db::synonym::SynonymDict>,
 }
 
 pub fn build_router(state: AppState) -> Router {
@@ -132,6 +134,39 @@ pub fn build_router(state: AppState) -> Router {
             .route("/hypotheses/{id}", post(judge::judge_hypothesis))
             .route("/v4", post(judge_v4::judge_v4))
         )
+        .nest("/api/graph", Router::new()
+            .route("/all", get(graph::graph_all))
+            .route("/summary", get(graph::graph_summary))
+            .route("/search", get(graph::graph_search))
+            .route("/node/{id}", get(graph::graph_node).patch(graph::update_node).delete(graph::delete_node))
+            .route("/node", post(graph::create_node))
+            .route("/edge", post(graph::create_edge))
+            .route("/edge/{id}", delete(graph::delete_edge))
+            .route("/walk/{id}", get(graph::graph_walk))
+            .route("/subgraph/{id}", get(graph::graph_subgraph))
+        )
+        .nest("/api/knowledge-util", Router::new()
+            .route("/check-failures", post(graph::check_failures))
+            .route("/check-revalidation", get(graph::check_revalidation))
+            .route("/detect-contradictions", post(graph::detect_contradictions))
+            .route("/auto-gap-claims", post(graph::auto_gap_claims))
+            .route("/suggest-combinations", get(graph::suggest_combinations))
+        )
+        .nest("/api/yahoo", Router::new()
+            .route("/fetch", post(graph::yahoo_fetch))
+            .route("/batch", post(graph::yahoo_batch))
+            .route("/auto-organize", post(graph::auto_organize))
+        )
+        .nest("/api/llm", Router::new()
+            .route("/auto-tag", post(graph::llm_auto_tag))
+            .route("/auto-tag-all", post(graph::llm_auto_tag_all))
+            .route("/summarize", post(graph::llm_summarize_search))
+            .route("/explain-groups", post(graph::llm_explain_groups))
+            .route("/verify-claim", post(graph::llm_verify_claim))
+        )
+        .route("/api/graph/claim", post(graph::create_claim))
+        .route("/api/graph/save", post(graph::save_graph))
+        .route("/graph", get(graph::serve_graph_dashboard))
         .fallback(dashboard::serve_dashboard)
         .layer(CorsLayer::permissive())
         .with_state(state)
