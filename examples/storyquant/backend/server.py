@@ -54,6 +54,10 @@ import pandas as pd
 from flask import Flask, jsonify, request
 from scipy import stats
 
+# amure-do embeds amure-db graph API on its own port (8080)
+# Override StoryQuant's default amure-db URL to point to amure-do
+os.environ.setdefault("AMURE_DB_URL", "http://localhost:8080")
+
 app = Flask(__name__)
 
 

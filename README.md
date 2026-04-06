@@ -287,6 +287,65 @@ Configure:
 
 ## Examples
 
+### StoryQuant — Narrative Market Intelligence (Recommended)
+
+News-driven multi-asset price attribution with graph-based causal reasoning. StoryQuant crawls 20+ sources, detects price events across 50+ tickers, and attributes causes via RAG search.
+
+```
+amure-do (:8080) — Hypothesis engine + embedded graph DB
+       |
+       v  POST /exec
+StoryQuant Backend (:5050) — 20+ helper functions
+       |
+       v  Streamlit (:8501) + Cloudflare Tunnel
+Dashboard — Signals, Events, Paper Trade, Explorer
+```
+
+1. Build and start amure-do:
+
+```bash
+cargo build --release
+./target/release/amure-do --config examples/storyquant/amure-do.toml
+```
+
+2. Start StoryQuant backend:
+
+```bash
+cd examples/storyquant/backend
+pip install -r requirements.txt
+STORYQUANT_ROOT=/path/to/StoryQuant python server.py
+```
+
+3. Open http://localhost:8080 for amure-do dashboard
+
+4. Available helpers in Lab experiments:
+
+```python
+# Crawl news and detect events
+news = crawl_news(hours=6)
+events = detect_events()
+
+# RAG search the knowledge graph
+results = graph_search("BTC ETF inflow", top_k=10)
+
+# Get narratives with returns
+narratives = get_narratives()
+stats = narrative_returns(narratives[0]["id"])
+print(f"Avg: {stats['avg_return']:+.2f}%, Win: {stats['win_rate']:.0f}%")
+
+# Factor analysis
+df = get_price("BTC-USD", hours=120)
+factor = compute_factor(df, "momentum", window=24)
+returns = df["close"].pct_change().shift(-1)
+summary = factor_summary(factor, returns)
+print(f"IC: {summary['mean_ic']:.4f}, IR: {summary['ir']:.4f}")
+
+# Full pipeline
+run_pipeline()  # crawl -> graph -> attribute -> narratives
+```
+
+See [examples/storyquant/README.md](examples/storyquant/README.md) for full documentation.
+
 ### Simple Research (LLM Only)
 
 1. Create `amure-do.toml`:

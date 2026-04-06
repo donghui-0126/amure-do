@@ -67,3 +67,5 @@ Manifest.toml
 
 # Project-specific artifacts
 *.profdata
+data/
+examples/storyquant/backend/data/

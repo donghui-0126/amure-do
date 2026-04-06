@@ -1,7 +1,7 @@
 [project]
-name = "Crypto Factor Research"
-domain = "crypto"
-description = "Hypothesis-driven crypto alpha factor discovery"
+name = "StoryQuant — Narrative Market Intelligence"
+domain = "multi-asset"
+description = "News-driven price attribution with graph-based causal reasoning. Crawls 20+ sources, detects events across 50+ tickers, attributes causes via RAG, discovers narratives automatically."
 
 [server]
 host = "0.0.0.0"
@@ -9,7 +9,7 @@ port = 8080
 
 [backend]
 type = "http"
-url = "http://localhost:5000"
+url = "http://localhost:5050"
 timeout_secs = 300
 health_endpoint = "/health"
 
@@ -18,8 +18,8 @@ default_provider = "claude_cli"
 max_tokens = 4096
 
 [gates]
-enabled = ["claim_gate", "thesis_gate", "experiment_gate", "argument_gate", "validity_gate", "dsr_gate", "judge_gate"]
+enabled = ["claim_gate", "experiment_gate", "argument_gate", "validity_gate", "judge_gate"]
 
 [dashboard]
-title = "Crypto Factor Research"
-accent_color = "#f0883e"
+title = "StoryQuant Intelligence"
+accent_color = "#3b82f6"
