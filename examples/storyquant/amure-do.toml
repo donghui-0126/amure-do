@@ -1,0 +1,25 @@
+[project]
+name = "StoryQuant — Narrative Market Intelligence"
+domain = "multi-asset"
+description = "News-driven price attribution with graph-based causal reasoning. Crawls 20+ sources, detects events, attributes causes via RAG, discovers narratives automatically."
+
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[backend]
+type = "http"
+url = "http://localhost:5050"
+timeout_secs = 300
+health_endpoint = "/health"
+
+[llm]
+default_provider = "claude_cli"
+max_tokens = 4096
+
+[gates]
+enabled = ["claim_gate", "experiment_gate", "argument_gate", "validity_gate", "judge_gate"]
+
+[dashboard]
+title = "StoryQuant Intelligence"
+accent_color = "#3b82f6"
