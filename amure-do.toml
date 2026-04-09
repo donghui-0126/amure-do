@@ -1,25 +1,32 @@
 [project]
-name = "StoryQuant — Narrative Market Intelligence"
-domain = "multi-asset"
-description = "News-driven price attribution with graph-based causal reasoning. Crawls 20+ sources, detects events across 50+ tickers, attributes causes via RAG, discovers narratives automatically."
+name = "My Research"
+domain = "general"
+description = "Hypothesis-driven research project"
 
 [server]
 host = "0.0.0.0"
 port = 8080
 
 [backend]
-type = "http"
-url = "http://localhost:5050"
+type = "none"
+# type = "http"
+# url = "http://localhost:5000"
+# type = "file"
+# dir = "backend"
+# command = "python3"
+# script = "server.py"
 timeout_secs = 300
-health_endpoint = "/health"
 
 [llm]
 default_provider = "claude_cli"
+# default_model = ""
+# default_api_key = ""
+# default_api_url = ""
 max_tokens = 4096
 
 [gates]
-enabled = ["claim_gate", "experiment_gate", "argument_gate", "validity_gate", "judge_gate"]
+enabled = ["claim_gate", "argument_gate"]
 
 [dashboard]
-title = "StoryQuant Intelligence"
-accent_color = "#3b82f6"
+title = "amure-do"
+accent_color = "#7c3aed"

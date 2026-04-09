@@ -1,1129 +1,1205 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>amure-do — Hypothesis Engine</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; font-size: 15px; }
-.header { background: linear-gradient(135deg, #161b22 0%, #1a1f2b 100%); padding: 14px 24px; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 16px; }
-.header h1 { font-size: 22px; color: #7c3aed; }
-.header .subtitle { font-size: 13px; color: #8b949e; margin-left: -8px; }
-.header .tagline { font-size: 10px; color: #484f58; margin-left: -8px; }
-.header .status { font-size: 14px; color: #3fb950; }
-.tabs { display: flex; background: #161b22; border-bottom: 1px solid #30363d; padding: 0 24px; }
-.tab { padding: 12px 28px; cursor: pointer; color: #8b949e; border-bottom: 2px solid transparent; font-size: 16px; font-weight: 500; }
-.tab.active { color: #7c3aed; border-bottom-color: #7c3aed; }
-.tab:hover { color: #c9d1d9; }
-.content { padding: 20px; max-width: 1400px; margin: 0 auto; padding-bottom: 180px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-bottom: 16px; }
-.card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
-.card h3 { font-size: 15px; color: #8b949e; margin-bottom: 8px; }
-.card .value { font-size: 28px; font-weight: 600; }
-.card .value.positive { color: #3fb950; }
-.card .value.negative { color: #f85149; }
-.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-.badge.mature { background: #238636; color: #fff; }
-.badge.accepted { background: #238636; color: #fff; }
-.badge.pending { background: #1f6feb; color: #fff; }
-.badge.rejected { background: #da3633; color: #fff; }
-.btn { padding: 7px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
-.btn-accept { background: #238636; color: #fff; }
-.btn-reject { background: #da3633; color: #fff; }
-.btn-promote { background: #9e6a03; color: #fff; }
-.btn:hover { opacity: 0.85; }
-input, select { background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 7px 10px; border-radius: 4px; font-size: 14px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.hidden { display: none; }
-.split { display: flex; gap: 16px; }
-.split-left { width: 400px; flex-shrink: 0; overflow-y: auto; max-height: calc(100vh - 160px); }
-.split-right { flex: 1; overflow-y: auto; max-height: calc(100vh - 160px); }
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--text-dim:#8b949e;--text-faint:#484f58;--accent:#7c3aed;--accent-dim:#6d28d9;--green:#3fb950;--red:#f85149;--blue:#1f6feb;--yellow:#e3b341;--card-hover:#1c2333;}
+html,body{height:100%;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:15px;overflow:hidden;}
+
+/* ── Layout ── */
+#app{display:flex;flex-direction:column;height:100vh;}
+.header{background:linear-gradient(135deg,var(--card) 0%,#1a1f2b 100%);padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.header-left{display:flex;align-items:center;gap:14px;}
+.header h1{font-size:22px;color:var(--accent);font-weight:700;letter-spacing:-0.5px;}
+.header .subtitle{font-size:13px;color:var(--text-dim);}
+.header .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+.header .status-dot.ok{background:var(--green);}
+.header .status-dot.err{background:var(--red);}
+.header .status-text{font-size:13px;color:var(--text-dim);}
+
+.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;flex-shrink:0;}
+.tab{padding:12px 28px;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;font-size:15px;font-weight:500;user-select:none;transition:color .15s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab:hover:not(.active){color:var(--text);}
+.tab-content{flex:1;overflow:hidden;position:relative;}
+.panel{display:none;height:100%;overflow-y:auto;padding:24px;}
+.panel.active{display:block;}
+
+/* ── Common ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;}
+.card:hover{border-color:#444c56;}
+.card h3{font-size:14px;color:var(--text-dim);margin-bottom:8px;font-weight:500;}
+.card .value{font-size:28px;font-weight:600;}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;}
+.badge.draft{background:var(--blue);color:#fff;}
+.badge.accepted{background:#238636;color:#fff;}
+.badge.rejected{background:#da3633;color:#fff;}
+.badge.pass{background:#238636;color:#fff;}
+.badge.fail{background:#da3633;color:#fff;}
+
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;transition:opacity .15s;}
+.btn:hover{opacity:0.85;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-green{background:#238636;color:#fff;}
+.btn-red{background:#da3633;color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:5px 12px;font-size:13px;}
+.btn+.btn{margin-left:8px;}
+
+input,select,textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:14px;font-family:inherit;width:100%;transition:border-color .15s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+textarea{resize:vertical;min-height:60px;}
+label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:4px;font-weight:500;}
+.form-group{margin-bottom:14px;}
+.form-row{display:flex;gap:12px;}
+.form-row>*{flex:1;}
+
+.split{display:flex;gap:16px;height:100%;}
+.split-left{width:340px;flex-shrink:0;overflow-y:auto;padding-right:4px;}
+.split-right{flex:1;overflow-y:auto;}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-faint);}
+.empty-state h3{font-size:18px;margin-bottom:8px;color:var(--text-dim);}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px;}
+
+.list-item{padding:12px 14px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s;background:var(--card);}
+.list-item:hover{border-color:#444c56;background:var(--card-hover);}
+.list-item.selected{border-color:var(--accent);background:#1c1633;}
+.list-item .li-title{font-size:14px;font-weight:500;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.list-item .li-meta{font-size:12px;color:var(--text-faint);}
+
+.reason-card{border-left:3px solid var(--border);padding:12px 14px;margin:8px 0;background:rgba(255,255,255,.02);border-radius:0 6px 6px 0;}
+.reason-card.support{border-left-color:var(--green);}
+.reason-card.rebut{border-left-color:var(--red);}
+.evidence-item,.experiment-item{padding:8px 12px;margin:4px 0;background:var(--bg);border-radius:4px;font-size:13px;}
+
+/* ── Setup Wizard ── */
+.wizard{max-width:560px;margin:0 auto;padding-top:40px;}
+.wizard-step{display:none;}
+.wizard-step.active{display:block;}
+.wizard-welcome{text-align:center;padding:40px 0;}
+.wizard-welcome h2{font-size:36px;color:var(--accent);font-weight:700;letter-spacing:-1px;}
+.wizard-welcome .tagline-ko{font-size:16px;color:var(--text-dim);margin:12px 0 6px;}
+.wizard-welcome .tagline-desc{font-size:14px;color:var(--text-faint);line-height:1.7;margin-bottom:32px;}
+.wizard-progress{display:flex;gap:6px;justify-content:center;margin-bottom:32px;}
+.wizard-progress .dot{width:8px;height:8px;border-radius:50%;background:var(--border);}
+.wizard-progress .dot.done{background:var(--accent);}
+.wizard-progress .dot.current{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+.wizard-nav{display:flex;justify-content:space-between;margin-top:28px;}
+.wizard h3{font-size:18px;margin-bottom:16px;color:var(--text);}
+
+.radio-group{display:flex;flex-direction:column;gap:8px;}
+.radio-opt{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;}
+.radio-opt:hover{border-color:#444c56;}
+.radio-opt.selected{border-color:var(--accent);background:rgba(124,58,237,.08);}
+.radio-opt input[type="radio"]{accent-color:var(--accent);width:auto;}
+.radio-opt label{cursor:pointer;font-size:14px;flex:1;}
+
+.check-group{display:flex;flex-direction:column;gap:8px;}
+.check-opt{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;}
+.check-opt:hover{border-color:#444c56;}
+.check-opt input[type="checkbox"]{accent-color:var(--accent);width:auto;}
+.check-opt label{cursor:pointer;font-size:14px;flex:1;}
+.check-opt .check-desc{font-size:12px;color:var(--text-faint);}
+
+.inline-key{margin-top:8px;display:none;}
+.inline-key.show{display:block;}
+
+/* ── Chat ── */
+.chat-container{display:flex;flex-direction:column;height:100%;}
+.chat-messages{flex:1;overflow-y:auto;padding:16px 0;}
+.chat-msg{margin-bottom:14px;max-width:80%;}
+.chat-msg.user{margin-left:auto;text-align:right;}
+.chat-msg .msg-role{font-size:11px;color:var(--text-faint);margin-bottom:2px;}
+.chat-msg .msg-body{display:inline-block;padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.6;text-align:left;white-space:pre-wrap;}
+.chat-msg.user .msg-body{background:var(--accent-dim);color:#fff;border-bottom-right-radius:3px;}
+.chat-msg.assistant .msg-body{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:3px;}
+.chat-input-row{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;}
+.chat-input-row input{flex:1;}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#444c56;}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .split{flex-direction:column;}
+  .split-left{width:100%;max-height:240px;}
+  .tabs{overflow-x:auto;}
+  .tab{padding:10px 16px;font-size:14px;white-space:nowrap;}
+  .panel{padding:16px;}
+}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;font-size:14px;z-index:9999;animation:toastIn .3s;max-width:400px;}
+.toast.success{background:#238636;color:#fff;}
+.toast.error{background:#da3633;color:#fff;}
+.toast.info{background:var(--blue);color:#fff;}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* Loading spinner */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-dim);}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <h1>amure-do</h1>
-    <div class="tagline">Hypothesis Engine — works, regardless.</div>
-  </div>
-  <span class="subtitle">Hypothesis Engine</span>
-  <span class="status" id="status">Loading...</span>
-  <span style="margin-left:auto;font-size:11px;color:#3fb950" id="activity-count"></span>
-</div>
-<div id="activity-panel" style="position:fixed;bottom:0;left:0;right:0;height:140px;background:#0d1117;border-top:1px solid #30363d;z-index:100;overflow-y:auto;padding:8px 24px;font-size:11px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-    <span style="color:#7c3aed;font-weight:600">Live Activity</span>
-    <div style="display:flex;gap:8px">
-      <span style="cursor:pointer;font-size:10px;color:#7c3aed" id="activity-mode-events" onclick="setActivityMode('events')">Events</span>
-      <span style="cursor:pointer;font-size:10px;color:#8b949e" id="activity-mode-backend" onclick="setActivityMode('backend')">Backend Log</span>
-    </div>
-  </div>
-  <div id="activity-feed"></div>
-  <pre id="backend-log-feed" style="display:none;font-size:10px;color:#8b949e;white-space:pre-wrap;margin:0"></pre>
-</div>
-
-<div class="tabs">
-  <div class="tab active" data-tab="research" onclick="showTab('research')">Research</div>
-  <div class="tab" data-tab="knowledge" onclick="showTab('knowledge')">Knowledge</div>
-  <div class="tab" data-tab="lab" onclick="showTab('lab')">Lab</div>
-  <div class="tab" data-tab="settings" onclick="showTab('settings')">Settings</div>
-</div>
-
-<div class="content">
-
-  <!-- ═══ RESEARCH (Framework) ═══ -->
-  <div id="tab-research">
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <input id="fw-idea" placeholder="아이디어 입력... (LLM이 Claim 구조 자동 생성)" style="flex:1">
-      <button class="btn btn-promote" onclick="fwAutoComplete()" id="fw-auto-btn">Auto-Generate</button>
-    </div>
-    <div id="fw-suggestion" style="display:none;margin-bottom:12px"></div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="fw-statement" placeholder="또는 직접 입력: Claim 명제..." style="flex:1">
-      <input id="fw-trigger" placeholder="Trigger: 재검토 조건..." style="width:250px">
-      <button class="btn btn-accept" onclick="fwCreateClaim()">Create</button>
-    </div>
-    <div class="grid" id="fw-stats"></div>
-    <div class="split">
-      <div class="split-left">
-        <div class="card" style="margin-bottom:8px">
-          <h3>Draft Claims</h3>
-          <div id="fw-drafts"></div>
-        </div>
-        <div class="card">
-          <h3 style="color:#3fb950">Knowledge (Accepted)</h3>
-          <div id="fw-knowledge"></div>
-        </div>
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div>
+        <h1>amure-do</h1>
+        <div class="subtitle">Hypothesis Engine</div>
       </div>
-      <div class="split-right">
-        <div id="fw-detail" class="card">
-          <p style="color:#8b949e">← Claim을 선택하세요</p>
-        </div>
-      </div>
+    </div>
+    <div id="headerStatus" style="display:flex;align-items:center;gap:6px;">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText"></span>
     </div>
   </div>
 
-  <!-- ═══ KNOWLEDGE ═══ -->
-  <div id="tab-knowledge" class="hidden">
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="kb-search" placeholder="Search knowledge..." style="flex:1" onkeydown="if(event.key==='Enter')searchKnowledge()">
-      <button class="btn btn-accept" onclick="searchKnowledge()">Search</button>
-      <select id="kb-filter" onchange="loadKnowledge()">
-        <option value="all">All</option>
-        <option value="accepted">Accepted</option>
-        <option value="mature">Mature</option>
-        <option value="thesis">Thesis</option>
-        <option value="argument">Arguments</option>
-      </select>
-    </div>
-    <div class="grid" id="kb-stats"></div>
-    <div id="kb-list"></div>
-  </div>
+  <!-- Tabs -->
+  <div class="tabs" id="tabBar"></div>
 
-  <!-- ═══ LAB ═══ -->
-  <div id="tab-lab" class="hidden">
-    <div style="display:flex;gap:16px;height:calc(100vh - 140px)">
-      <div class="card split-left">
-        <h3>Sessions</h3>
-        <div style="margin:8px 0">
-          <input id="new-session-name" placeholder="Session name..." style="width:100%">
-          <select id="new-session-type" style="width:100%;margin-top:4px">
-            <option value="free">Free Lab</option>
-            <option value="claim">Claim Context</option>
-            <option value="reason">Reason Context</option>
-            <option value="experiment">Experiment Context</option>
-          </select>
-          <button class="btn btn-accept" onclick="createSession()" style="margin-top:4px;width:100%">Create</button>
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- Setup Panel -->
+    <div class="panel" id="panelSetup">
+      <div class="wizard" id="wizard">
+        <!-- Step 0: Welcome -->
+        <div class="wizard-step active" data-step="0">
+          <div class="wizard-welcome">
+            <h2>amure-do</h2>
+            <div class="tagline-ko">가설 검증 엔진 — 아무래도, 돌아간다.</div>
+            <div class="tagline-desc">
+              어떤 도메인이든, 어떤 백엔드든, 어떤 AI든.<br>
+              가설을 세우고, 검증하고, 지식을 축적하세요.
+            </div>
+            <button class="btn btn-primary" onclick="wizardNext()" style="padding:12px 40px;font-size:16px;">시작하기</button>
+          </div>
         </div>
-        <div id="session-list"></div>
+
+        <!-- Step 1: Project -->
+        <div class="wizard-step" data-step="1">
+          <div class="wizard-progress" id="wizProg1"></div>
+          <h3>프로젝트 설정</h3>
+          <div class="form-group">
+            <label>프로젝트 이름</label>
+            <input id="setupName" placeholder="My Research Project">
+          </div>
+          <div class="form-group">
+            <label>도메인</label>
+            <select id="setupDomain">
+              <option value="general">General</option>
+              <option value="crypto">Crypto</option>
+              <option value="stocks">Stocks</option>
+              <option value="biology">Biology</option>
+              <option value="social-science">Social Science</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>설명</label>
+            <textarea id="setupDesc" rows="3" placeholder="프로젝트에 대한 간단한 설명..."></textarea>
+          </div>
+          <div class="wizard-nav">
+            <button class="btn btn-outline" onclick="wizardPrev()">이전</button>
+            <button class="btn btn-primary" onclick="wizardNext()">다음</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Backend -->
+        <div class="wizard-step" data-step="2">
+          <div class="wizard-progress" id="wizProg2"></div>
+          <h3>분석 백엔드 <span style="font-size:13px;color:var(--text-faint);font-weight:400;">(실험 실행용, 선택사항)</span></h3>
+          <div class="radio-group" id="backendGroup">
+            <div class="radio-opt selected" onclick="selectRadio(this,'backend')">
+              <input type="radio" name="backend" value="none" checked>
+              <label>없음 — LLM만 사용</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'backend')">
+              <input type="radio" name="backend" value="python_http">
+              <label>Python HTTP (localhost:5000)</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'backend')">
+              <input type="radio" name="backend" value="julia_file">
+              <label>Julia File-based</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'backend')">
+              <input type="radio" name="backend" value="node_http">
+              <label>Node.js HTTP</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'backend')">
+              <input type="radio" name="backend" value="custom_http">
+              <label>Custom HTTP</label>
+            </div>
+          </div>
+          <div class="form-group inline-key" id="backendUrlGroup" style="margin-top:12px;">
+            <label>Backend URL</label>
+            <input id="setupBackendUrl" placeholder="http://localhost:8080">
+          </div>
+          <div class="wizard-nav">
+            <button class="btn btn-outline" onclick="wizardPrev()">이전</button>
+            <button class="btn btn-primary" onclick="wizardNext()">다음</button>
+          </div>
+        </div>
+
+        <!-- Step 3: AI Provider -->
+        <div class="wizard-step" data-step="3">
+          <div class="wizard-progress" id="wizProg3"></div>
+          <h3>LLM 프로바이더</h3>
+          <div class="radio-group" id="llmGroup">
+            <div class="radio-opt selected" onclick="selectRadio(this,'llm')">
+              <input type="radio" name="llm" value="claude_cli" checked>
+              <label>Claude CLI (로컬 claude 명령어)</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'llm')">
+              <input type="radio" name="llm" value="claude_api">
+              <label>Claude API</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'llm')">
+              <input type="radio" name="llm" value="openai">
+              <label>OpenAI</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'llm')">
+              <input type="radio" name="llm" value="ollama">
+              <label>Ollama (로컬, localhost:11434)</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'llm')">
+              <input type="radio" name="llm" value="google_ai">
+              <label>Google AI (Gemini)</label>
+            </div>
+            <div class="radio-opt" onclick="selectRadio(this,'llm')">
+              <input type="radio" name="llm" value="other">
+              <label>기타...</label>
+            </div>
+          </div>
+          <div class="form-group inline-key" id="llmKeyGroup" style="margin-top:12px;">
+            <label>API Key</label>
+            <input id="setupLlmKey" type="password" placeholder="sk-...">
+          </div>
+          <div class="form-group inline-key" id="llmModelGroup" style="margin-top:0;">
+            <label>모델 (선택)</label>
+            <input id="setupLlmModel" placeholder="예: gpt-4o, claude-sonnet-4-20250514...">
+          </div>
+          <div class="wizard-nav">
+            <button class="btn btn-outline" onclick="wizardPrev()">이전</button>
+            <button class="btn btn-primary" onclick="wizardNext()">다음</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Gates -->
+        <div class="wizard-step" data-step="4">
+          <div class="wizard-progress" id="wizProg4"></div>
+          <h3>품질 게이트 <span style="font-size:13px;color:var(--text-faint);font-weight:400;">가설 채택 전 검증 단계</span></h3>
+          <div class="check-group" id="gatesGroup">
+            <div class="check-opt" onclick="toggleCheck(this)">
+              <input type="checkbox" value="claim_gate" checked>
+              <div>
+                <label>Claim Gate</label>
+                <div class="check-desc">명제가 충분히 구체적인가</div>
+              </div>
+            </div>
+            <div class="check-opt" onclick="toggleCheck(this)">
+              <input type="checkbox" value="argument_gate" checked>
+              <div>
+                <label>Argument Gate</label>
+                <div class="check-desc">지지 근거가 있는가</div>
+              </div>
+            </div>
+            <div class="check-opt" onclick="toggleCheck(this)">
+              <input type="checkbox" value="evidence_gate">
+              <div>
+                <label>Evidence Gate</label>
+                <div class="check-desc">근거에 증거가 있는가</div>
+              </div>
+            </div>
+            <div class="check-opt" onclick="toggleCheck(this)">
+              <input type="checkbox" value="experiment_gate">
+              <div>
+                <label>Experiment Gate</label>
+                <div class="check-desc">실험을 수행했는가</div>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:12px;">게이트가 많을수록 엄격, 적을수록 유연합니다.</p>
+          <div class="wizard-nav">
+            <button class="btn btn-outline" onclick="wizardPrev()">이전</button>
+            <button class="btn btn-primary" onclick="finishSetup()">완료</button>
+          </div>
+        </div>
       </div>
-      <div class="card" style="flex:1;display:flex;flex-direction:column">
-        <div id="chat-header" style="padding-bottom:8px;border-bottom:1px solid #30363d;margin-bottom:8px">
-          <span style="color:#8b949e">Select or create a session</span>
+    </div>
+
+    <!-- Research Panel -->
+    <div class="panel" id="panelResearch">
+      <!-- Top bar: idea input -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input id="ideaInput" placeholder="아이디어를 입력하세요..." style="flex:1;">
+          <button class="btn btn-primary" onclick="autoGenerate()" id="autoGenBtn">Auto-Generate</button>
         </div>
-        <div id="chat-messages" style="flex:1;overflow-y:auto;padding:8px 0"></div>
-        <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid #30363d">
-          <input id="chat-input" placeholder="Type a message..." style="flex:1" onkeydown="if(event.key==='Enter')sendChat()">
-          <button class="btn btn-accept" onclick="sendChat()">Send</button>
+        <div id="manualClaimForm" style="display:none;">
+          <div class="form-row" style="margin-bottom:8px;">
+            <div class="form-group" style="margin-bottom:0;"><label>Statement</label><input id="claimStatement" placeholder="검증할 명제..."></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Trigger</label><input id="claimTrigger" placeholder="탐구 계기..."></div>
+          </div>
+          <div class="form-group"><label>Keywords (콤마 구분)</label><input id="claimKeywords" placeholder="keyword1, keyword2"></div>
+          <button class="btn btn-primary btn-sm" onclick="createClaim()">생성</button>
+        </div>
+        <div style="margin-top:6px;">
+          <a href="javascript:void(0)" onclick="toggleManualForm()" style="font-size:13px;color:var(--accent);text-decoration:none;" id="manualToggle">수동 입력 열기</a>
+        </div>
+      </div>
+
+      <!-- Split: list + detail -->
+      <div class="split" style="height:calc(100vh - 300px);">
+        <div class="split-left" id="claimList">
+          <div class="loading-overlay"><div class="spinner"></div></div>
+        </div>
+        <div class="split-right" id="claimDetail">
+          <div class="empty-state">
+            <h3>가설을 선택하세요</h3>
+            <p>왼쪽 목록에서 가설을 클릭하면 상세 정보를 볼 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Knowledge Panel -->
+    <div class="panel" id="panelKnowledge">
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:8px;">
+          <input id="knowledgeSearch" placeholder="지식 검색 (RAG)..." style="flex:1;">
+          <button class="btn btn-primary btn-sm" onclick="searchKnowledge()">검색</button>
+        </div>
+      </div>
+      <div id="knowledgeList">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Lab Panel -->
+    <div class="panel" id="panelLab" style="padding:0;">
+      <div class="split" style="height:100%;padding:0;">
+        <div class="split-left" style="border-right:1px solid var(--border);padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:15px;">Sessions</h3>
+            <button class="btn btn-primary btn-sm" onclick="showNewSession()">+ 새 세션</button>
+          </div>
+          <div id="newSessionForm" style="display:none;margin-bottom:12px;" class="card">
+            <div class="form-group"><label>제목</label><input id="sessionTitle" placeholder="세션 제목..."></div>
+            <div class="form-group"><label>연결할 Claim ID (선택)</label><input id="sessionClaimId" placeholder="claim_..."></div>
+            <button class="btn btn-primary btn-sm" onclick="createSession()">생성</button>
+          </div>
+          <div id="sessionList"></div>
+        </div>
+        <div class="split-right" style="padding:16px;display:flex;flex-direction:column;">
+          <div id="chatArea">
+            <div class="empty-state">
+              <h3>Lab 세션</h3>
+              <p>AI와 자유롭게 탐구하고 실험하세요.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="panel" id="panelSettings">
+      <div style="max-width:700px;">
+        <h3 style="font-size:18px;margin-bottom:16px;">설정</h3>
+        <div class="grid">
+          <div class="card">
+            <h3>프로젝트</h3>
+            <div id="settingsProject" style="font-size:14px;color:var(--text-dim);">로딩 중...</div>
+          </div>
+          <div class="card">
+            <h3>백엔드</h3>
+            <div id="settingsBackend" style="font-size:14px;color:var(--text-dim);">로딩 중...</div>
+            <button class="btn btn-outline btn-sm" onclick="startBackend()" style="margin-top:10px;">백엔드 시작</button>
+          </div>
+          <div class="card">
+            <h3>LLM</h3>
+            <div id="settingsLlm" style="font-size:14px;color:var(--text-dim);">로딩 중...</div>
+          </div>
+          <div class="card">
+            <h3>Graph</h3>
+            <div id="settingsGraph" style="font-size:14px;color:var(--text-dim);">로딩 중...</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3>시스템 상태</h3>
+          <div id="settingsHealth" style="font-size:14px;">
+            <div class="loading-overlay"><div class="spinner"></div></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- ═══ SETTINGS ═══ -->
-  <div id="tab-settings" class="hidden">
-    <div class="grid">
-      <div class="card">
-        <h3>Adaptive Mode</h3>
-        <div id="adaptive-status" style="font-size:20px;font-weight:600;margin:8px 0"></div>
-        <button class="btn btn-accept" onclick="toggleAdaptive()">Toggle</button>
-      </div>
-      <div class="card">
-        <h3>Backend</h3>
-        <div id="backend-status"></div>
-        <button class="btn btn-accept" style="margin-top:8px;font-size:12px" onclick="startBackend()">Start Backend</button>
-      </div>
-      <div class="card">
-        <h3>Knowledge Stats</h3>
-        <div id="settings-stats"></div>
-      </div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <h3>LLM Routing</h3>
-      <div id="llm-routing"></div>
-      <div style="margin-top:8px;padding:8px;background:#0d1117;border-radius:4px;border:1px solid #30363d">
-        <div style="font-size:11px;color:#8b949e;margin-bottom:4px">Add/Update Role</div>
-        <div style="display:flex;gap:4px;margin-bottom:4px">
-          <select id="llm-role" style="font-size:11px;width:100px">
-            <option>default</option><option>lab</option><option>judge</option><option>experiment</option><option>gate</option><option>canvas</option>
-          </select>
-          <select id="llm-provider" style="font-size:11px;width:140px" onchange="onProviderChange()">
-            <optgroup label="Cloud Providers">
-              <option value="claude_cli">Claude CLI</option>
-              <option value="claude_api">Claude API</option>
-              <option value="openai">OpenAI</option>
-              <option value="google">Google AI (Gemini)</option>
-              <option value="azure">Azure OpenAI</option>
-              <option value="groq">Groq</option>
-              <option value="together">Together AI</option>
-            </optgroup>
-            <optgroup label="Local Providers">
-              <option value="ollama">Ollama</option>
-              <option value="lmstudio">LM Studio</option>
-              <option value="openai_compatible">OpenAI Compatible</option>
-            </optgroup>
-            <option value="custom">Custom</option>
-          </select>
-          <input id="llm-model" placeholder="model (e.g. gpt-4o)" style="flex:1;font-size:11px">
-        </div>
-        <div style="display:flex;gap:4px" id="llm-extra-fields">
-          <input id="llm-apikey" placeholder="API key (optional)" style="flex:1;font-size:11px" type="password">
-          <input id="llm-apiurl" placeholder="Custom URL (optional)" style="width:150px;font-size:11px">
-          <button class="btn btn-accept" style="font-size:10px" onclick="saveLlmRole()">Save</button>
-        </div>
-      </div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <h3>Tendencies & Hooks</h3>
-      <div id="settings-hooks"></div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <h3>Logs</h3>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="btn btn-accept" onclick="loadSettings()">Refresh</button>
-      </div>
-      <pre id="settings-log" style="background:#0d1117;padding:10px;border-radius:4px;font-size:11px;max-height:300px;overflow-y:auto;color:#8b949e"></pre>
-    </div>
-  </div>
-
 </div>
 
 <script>
+// ──────────────────────────────────────────────
+// State
+// ──────────────────────────────────────────────
 const API = '';
-async function api(path, opts) { const r = await fetch(API + path, opts); return r.json(); }
+let currentTab = 'research';
+let claims = [];
+let selectedClaimId = null;
+let selectedClaimData = null;
+let labSessions = [];
+let selectedSessionId = null;
+let chatMessages = [];
+let wizardStep = 0;
+const WIZARD_STEPS = 5;
 
-function showTab(name) {
-  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
-  document.getElementById('tab-' + name).classList.remove('hidden');
-  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.getAttribute('data-tab') === name));
-  if (name === 'research') loadFramework();
-  if (name === 'knowledge') loadKnowledge();
-  if (name === 'lab') loadSessions();
-  if (name === 'settings') loadSettings();
+// ──────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (!r.ok) {
+    const text = await r.text().catch(() => '');
+    throw new Error(text || r.statusText);
+  }
+  return r.json();
 }
 
-// ═══ RESEARCH (Framework) ═════════════════════════════════════════
-let fwSelectedClaim = null;
-
-async function loadFramework() {
-  // Update status bar
-  try {
-    const ov = await api('/api/dashboard/overview');
-    const k = ov.knowledge;
-    const backendAlive = ov.backend_server?.alive ?? ov.julia_server?.alive ?? false;
-    document.getElementById('status').textContent = `${k.n_claims} claims | ${k.n_knowledge} knowledge | ${k.n_reasons} reasons | Backend: ${backendAlive?'ON':'OFF'}`;
-  } catch(e) {}
-
-  const d = await api('/api/framework/claims');
-  // Stats
-  document.getElementById('fw-stats').innerHTML = [
-    {label:'Draft Claims', value:d.n_drafts},
-    {label:'Knowledge', value:d.n_knowledge, cls:'positive'},
-  ].map(c => `<div class="card"><h3>${c.label}</h3><div class="value ${c.cls||''}">${c.value}</div></div>`).join('');
-
-  // Drafts
-  document.getElementById('fw-drafts').innerHTML = (d.drafts||[]).length === 0
-    ? '<p style="color:#8b949e;font-size:12px">No drafts</p>'
-    : (d.drafts||[]).map(c => {
-      const wsColors = {running:'#f0883e',needs_verdict:'#1f6feb',designed:'#8b949e',done:'#3fb950',idle:'#484f58'};
-      const wsIcons = {running:'⏳',needs_verdict:'⚖️',designed:'📋',done:'✅',idle:'💤'};
-      const ws = c.work_status||'idle';
-      return `<div style="padding:8px;border-bottom:1px solid #21262d;cursor:pointer;border-left:3px solid ${wsColors[ws]||'#484f58'}" onclick="fwSelectClaim('${c.id}')"
-           onmouseenter="this.style.background='#1f6feb11'" onmouseleave="this.style.background='transparent'">
-        <div style="font-size:12px;display:flex;align-items:center;gap:4px">
-          <span>${wsIcons[ws]||''}</span>
-          <span style="flex:1">${c.statement.substring(0,55)}${c.statement.length>55?'...':''}</span>
-        </div>
-        <div style="font-size:10px;color:#8b949e;margin-top:2px;display:flex;gap:8px">
-          <span><span style="color:#3fb950">+${c.n_support}</span>/<span style="color:#f85149">-${c.n_rebut}</span></span>
-          ${c.n_experiments>0?`<span>${c.experiments_summary.interpreted||0}/${c.n_experiments} exp</span>`:''}
-          ${c.keywords?.length?`<span style="color:#484f58">${c.keywords.slice(0,3).join(',')}</span>`:''}
-        </div>
-      </div>`;
-    }).join('');
-
-  // Knowledge
-  document.getElementById('fw-knowledge').innerHTML = (d.knowledge||[]).length === 0
-    ? '<p style="color:#8b949e;font-size:12px">No knowledge yet</p>'
-    : (d.knowledge||[]).map(c => `
-      <div style="padding:8px;border-bottom:1px solid #21262d;border-left:3px solid #3fb950;cursor:pointer" onclick="fwSelectClaim('${c.id}')">
-        <div style="font-size:12px">${c.statement.substring(0,60)}${c.statement.length>60?'...':''}</div>
-        <div style="font-size:10px;color:#8b949e;margin-top:2px">${c.accept_reason||''}</div>
-      </div>`).join('');
+function $(id) { return document.getElementById(id); }
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
 }
 
-async function fwAutoComplete() {
-  const idea = document.getElementById('fw-idea').value.trim();
-  if (!idea) return;
-  const btn = document.getElementById('fw-auto-btn');
-  const el = document.getElementById('fw-suggestion');
-  btn.textContent = 'Generating...'; btn.disabled = true;
+// ──────────────────────────────────────────────
+// Tabs
+// ──────────────────────────────────────────────
+const TABS = [
+  { id: 'setup', label: 'Setup', panel: 'panelSetup' },
+  { id: 'research', label: 'Research', panel: 'panelResearch' },
+  { id: 'knowledge', label: 'Knowledge', panel: 'panelKnowledge' },
+  { id: 'lab', label: 'Lab', panel: 'panelLab' },
+  { id: 'settings', label: 'Settings', panel: 'panelSettings' },
+];
 
-  // 로딩 표시
-  el.style.display = 'block';
-  el.innerHTML = `<div class="card" style="border:1px solid #7c3aed;text-align:center;padding:30px">
-    <div style="font-size:24px;margin-bottom:10px">⏳</div>
-    <div style="color:#7c3aed;font-size:16px;font-weight:600">Generating...</div>
-    <div style="color:#8b949e;margin-top:8px">RAG 검색 → LLM 호출 → Claim 구조 생성 중</div>
-    <div style="color:#484f58;margin-top:4px;font-size:13px">"${idea}"</div>
-    <div style="margin-top:12px"><div style="width:40px;height:40px;border:3px solid #30363d;border-top-color:#7c3aed;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto"></div></div>
-  </div>`;
+function renderTabs(showSetup) {
+  const bar = $('tabBar');
+  bar.innerHTML = '';
+  TABS.forEach(t => {
+    if (t.id === 'setup' && !showSetup) return;
+    const el = document.createElement('div');
+    el.className = 'tab' + (t.id === currentTab ? ' active' : '');
+    el.textContent = t.label;
+    el.onclick = () => switchTab(t.id);
+    bar.appendChild(el);
+  });
+}
 
-  const d = await api('/api/framework/claims/auto-complete', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea})});
-  btn.textContent = 'Auto-Generate'; btn.disabled = false;
+function switchTab(id) {
+  currentTab = id;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const t = TABS.find(x => x.id === id);
+  if (t) $(t.panel).classList.add('active');
+  document.querySelectorAll('.tab').forEach(el => {
+    el.classList.toggle('active', el.textContent === (t ? t.label : ''));
+  });
+  if (id === 'research') loadClaims();
+  if (id === 'knowledge') loadKnowledge();
+  if (id === 'lab') loadSessions();
+  if (id === 'settings') loadSettings();
+}
 
-  if (d.error) { el.style.display = 'none'; alert('LLM 호출 실패: ' + d.error); return; }
-
-  // RAG hit: 유사한 기존 Claim 발견
-  if (d.status === 'rag_hit') {
-    let html = `<div class="card" style="border:1px solid #d29922">`;
-    html += `<h3 style="color:#d29922">유사한 기존 Claim 발견</h3>`;
-    html += `<div style="font-size:11px;color:#8b949e;margin-bottom:8px">아이디어: "${d.idea}"</div>`;
-    (d.rag_results||[]).forEach(r => {
-      const statusColor = r.status === 'Accepted' ? '#3fb950' : '#1f6feb';
-      html += `<div style="border-left:3px solid ${statusColor};padding:6px 10px;margin:4px 0;background:#161b22;border-radius:0 4px 4px 0;font-size:12px;cursor:pointer" onclick="fwSelectClaim('${r.claim_id}')">
-        <div><span class="badge" style="background:${statusColor};font-size:9px">${r.status}</span> ${r.statement}</div>
-        <div style="color:#8b949e;font-size:10px;margin-top:2px">score: ${r.score.toFixed(2)} | ${r.n_reasons} reasons</div>
-        ${r.matched_reasons?.map(mr => `<div style="color:#d2a8ff;font-size:10px;padding-left:8px">└ ${mr}</div>`).join('')||''}
-      </div>`;
-    });
-    html += `<div style="margin-top:8px;display:flex;gap:6px">
-      <button class="btn btn-promote" onclick="fwForceAutoComplete('${d.idea.replace(/'/g,"\\'")}')">그래도 새로 생성</button>
-      <button class="btn btn-reject" onclick="document.getElementById('fw-suggestion').style.display='none'">취소</button>
-    </div></div>`;
-    el.style.display = 'block';
+// ──────────────────────────────────────────────
+// Setup Wizard
+// ──────────────────────────────────────────────
+function renderWizardProgress(stepNum) {
+  for (let s = 1; s <= 4; s++) {
+    const el = $('wizProg' + s);
+    if (!el) continue;
+    let html = '';
+    for (let i = 1; i <= 4; i++) {
+      const cls = i < stepNum ? 'done' : i === stepNum ? 'current' : '';
+      html += '<div class="dot ' + cls + '"></div>';
+    }
     el.innerHTML = html;
-    return;
   }
-
-  const s = d.suggestion;
-
-  if (!s) {
-    el.style.display = 'block';
-    el.innerHTML = `<div class="card"><h3>Raw LLM 응답</h3><pre style="font-size:11px;white-space:pre-wrap;color:#8b949e">${(d.raw||'').substring(0,1000)}</pre></div>`;
-    return;
-  }
-
-  let html = `<div class="card" style="border:1px solid #7c3aed">`;
-  html += `<h3 style="color:#7c3aed">Auto-Generated Claim</h3>`;
-  html += `<div style="font-size:13px;margin:6px 0"><strong>Statement:</strong> ${s.statement}</div>`;
-  html += `<div style="font-size:12px;color:#8b949e;margin-bottom:8px"><strong>Trigger:</strong> ${s.trigger}</div>`;
-
-  // Support reasons
-  if (s.support_reasons?.length) {
-    html += `<div style="font-size:11px;color:#3fb950;font-weight:600;margin:4px 0">Support Reasons:</div>`;
-    s.support_reasons.forEach(r => {
-      html += `<div style="border-left:2px solid #3fb950;padding:4px 8px;margin:3px 0;font-size:11px">
-        <div>${r.statement}</div>
-        <div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div>
-      </div>`;
-    });
-  }
-
-  // Rebut reasons
-  if (s.rebut_reasons?.length) {
-    html += `<div style="font-size:11px;color:#f85149;font-weight:600;margin:4px 0">Rebut Reasons:</div>`;
-    s.rebut_reasons.forEach(r => {
-      html += `<div style="border-left:2px solid #f85149;padding:4px 8px;margin:3px 0;font-size:11px">
-        <div>${r.statement}</div>
-        <div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div>
-      </div>`;
-    });
-  }
-
-  // Suggested experiments
-  if (s.suggested_experiments?.length) {
-    html += `<div style="font-size:11px;color:#f0883e;font-weight:600;margin:4px 0">Suggested Experiments:</div>`;
-    s.suggested_experiments.forEach(e => {
-      html += `<div style="border-left:2px solid #f0883e;padding:4px 8px;margin:3px 0;font-size:10px">
-        <div>${e.description}</div>
-        <div style="color:#8b949e">if_true: ${e.if_true}</div>
-        <div style="color:#8b949e">if_false: ${e.if_false}</div>
-      </div>`;
-    });
-  }
-
-  html += `<div style="margin-top:8px;display:flex;gap:6px">
-    <button class="btn btn-accept" onclick="fwApplySuggestion()">Apply → Create Claim + Reasons</button>
-    <button class="btn btn-reject" onclick="document.getElementById('fw-suggestion').style.display='none'">Dismiss</button>
-  </div>`;
-  html += `</div>`;
-
-  el.style.display = 'block';
-  el.innerHTML = html;
-
-  // Store suggestion for apply
-  window._fwSuggestion = s;
 }
 
-async function fwForceAutoComplete(idea) {
-  const btn = document.getElementById('fw-auto-btn');
-  btn.textContent = 'Generating...'; btn.disabled = true;
-  const d = await api('/api/framework/claims/auto-complete?force=1', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea})});
-  btn.textContent = 'Auto-Generate'; btn.disabled = false;
-  if (d.error) { alert('LLM 호출 실패: ' + d.error); return; }
-  // Reuse the same rendering logic
-  const s = d.suggestion;
-  const el = document.getElementById('fw-suggestion');
-  if (!s) {
-    el.innerHTML = `<div class="card"><h3>Raw LLM 응답</h3><pre style="font-size:11px;white-space:pre-wrap;color:#8b949e">${(d.raw||'').substring(0,1000)}</pre></div>`;
-    return;
-  }
-  // Render suggestion (same as fwAutoComplete)
-  let html = `<div class="card" style="border:1px solid #7c3aed"><h3 style="color:#7c3aed">Auto-Generated Claim</h3>`;
-  html += `<div style="font-size:13px;margin:6px 0"><strong>Statement:</strong> ${s.statement}</div>`;
-  html += `<div style="font-size:12px;color:#8b949e;margin-bottom:8px"><strong>Trigger:</strong> ${s.trigger}</div>`;
-  if (s.support_reasons?.length) { html += `<div style="font-size:11px;color:#3fb950;font-weight:600;margin:4px 0">Support:</div>`; s.support_reasons.forEach(r => { html += `<div style="border-left:2px solid #3fb950;padding:4px 8px;margin:3px 0;font-size:11px"><div>${r.statement}</div><div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div></div>`; }); }
-  if (s.rebut_reasons?.length) { html += `<div style="font-size:11px;color:#f85149;font-weight:600;margin:4px 0">Rebut:</div>`; s.rebut_reasons.forEach(r => { html += `<div style="border-left:2px solid #f85149;padding:4px 8px;margin:3px 0;font-size:11px"><div>${r.statement}</div><div style="color:#8b949e;font-size:10px">Bridge: ${r.bridge}</div></div>`; }); }
-  html += `<div style="margin-top:8px;display:flex;gap:6px"><button class="btn btn-accept" onclick="fwApplySuggestion()">Apply</button><button class="btn btn-reject" onclick="document.getElementById('fw-suggestion').style.display='none'">Dismiss</button></div></div>`;
-  el.innerHTML = html;
-  window._fwSuggestion = s;
-}
-
-async function fwApplySuggestion() {
-  const s = window._fwSuggestion;
-  if (!s) return;
-  const d = await api('/api/framework/claims/apply-suggestion', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    statement: s.statement,
-    trigger: s.trigger,
-    keywords: s.keywords || [],
-    support_reasons: s.support_reasons || [],
-    rebut_reasons: s.rebut_reasons || [],
-    suggested_experiments: s.suggested_experiments || [],
-  })});
-  if (d.error) { alert(d.error); return; }
-  document.getElementById('fw-suggestion').style.display = 'none';
-  document.getElementById('fw-idea').value = '';
-  loadFramework();
-  if (d.claim_id) fwSelectClaim(d.claim_id);
-}
-
-async function fwCreateClaim() {
-  const statement = document.getElementById('fw-statement').value.trim();
-  const trigger = document.getElementById('fw-trigger').value.trim();
-  if (!statement || !trigger) return;
-  const d = await api('/api/framework/claims', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({statement,trigger})});
-  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
-  document.getElementById('fw-statement').value = '';
-  document.getElementById('fw-trigger').value = '';
-  loadFramework();
-  if (d.id) fwSelectClaim(d.id);
-}
-
-async function fwSelectClaim(id) {
-  fwSelectedClaim = id;
-  const d = await api('/api/framework/claims/' + id);
-  if (d.error) return;
-  const c = d.claim;
-  const reasons = d.reasons || [];
-  const check = d.structural_check || {};
-
-  const supportReasons = reasons.filter(r => r.reason_type === 'Support');
-  const rebutReasons = reasons.filter(r => r.reason_type === 'Rebut');
-
-  let html = `<h3 style="color:#7c3aed;margin-bottom:8px">${c.statement}</h3>`;
-  html += `<div style="font-size:11px;color:#8b949e;margin-bottom:12px">Trigger: ${c.trigger}</div>`;
-  html += `<div style="margin-bottom:8px"><span class="badge ${c.status === 'Accepted' ? 'accepted' : c.status === 'Rejected' ? 'rejected' : 'pending'}">${c.status}</span></div>`;
-
-  // Structural check
-  if (check.errors?.length || check.warnings?.length) {
-    html += `<div style="background:#${check.passed?'23863622':'da363322'};border:1px solid #${check.passed?'238636':'da3633'};border-radius:6px;padding:8px;margin-bottom:12px;font-size:11px">`;
-    html += `<div style="font-weight:600;margin-bottom:4px">${check.passed?'Gate: PASS':'Gate: FAIL'}</div>`;
-    (check.errors||[]).forEach(e => { html += `<div style="color:#f85149">- ${e}</div>`; });
-    (check.warnings||[]).forEach(w => { html += `<div style="color:#d29922">- ${w}</div>`; });
-    html += `</div>`;
-  }
-
-  // Support reasons
-  html += `<h3 style="color:#3fb950;font-size:12px;margin:8px 0 4px">Support (${supportReasons.length})</h3>`;
-  supportReasons.forEach(r => {
-    html += `<div style="border-left:3px solid #3fb950;padding:6px 10px;margin:4px 0;background:#161b22;border-radius:0 4px 4px 0;font-size:12px">`;
-    html += `<div>${r.statement}</div>`;
-    html += `<div style="color:#8b949e;font-size:10px;margin-top:2px">Bridge: ${r.bridge}</div>`;
-    if (r.evidences?.length) { html += `<div style="font-size:10px;margin-top:2px">${r.evidences.map(e => `<span class="badge" style="background:#30363d;margin:1px">${e.tag}: ${e.description.substring(0,30)}</span>`).join('')}</div>`; }
-    html += `<div style="margin-top:4px;display:flex;gap:4px">
-      <input id="ev-desc-${r.id}" placeholder="Evidence..." style="flex:1;font-size:10px">
-      <select id="ev-tag-${r.id}" style="font-size:10px"><option>backtest</option><option>live</option><option>intuition</option><option>literature</option></select>
-      <button class="btn btn-accept" style="font-size:9px;padding:2px 6px" onclick="fwAddEvidence('${r.id}')">+Ev</button>
-      <button class="btn btn-promote" style="font-size:9px;padding:2px 6px" onclick="fwToggleExpForm('${r.id}')">+Exp</button>
-    </div>`;
-    // Experiment form (hidden by default)
-    html += `<div id="exp-form-${r.id}" style="display:none;margin-top:6px;padding:6px;background:#0d1117;border-radius:4px;border:1px solid #30363d">
-      <div style="font-size:10px;color:#8b949e;margin-bottom:4px">Design Experiment</div>
-      <select id="exp-method-${r.id}" style="width:100%;font-size:10px;margin-bottom:3px">
-        <option value="distributional">Distributional (분포 분석)</option>
-        <option value="conditional">Conditional (조건부 분석)</option>
-        <option value="cross_sectional" selected>Cross-sectional (IC/rank)</option>
-        <option value="dose_response">Dose-response (단조성)</option>
-        <option value="regime">Regime (레짐별 안정성)</option>
-        <option value="temporal">Temporal (시간 안정성)</option>
-        <option value="multi_horizon">Multi-horizon (IC decay)</option>
-        <option value="entry_exit">Entry-exit (진입/청산)</option>
-        <option value="backtest">Backtest (수익률)</option>
-      </select>
-      <input id="exp-desc-${r.id}" placeholder="실험 설명..." style="width:100%;font-size:10px;margin-bottom:3px">
-      <input id="exp-true-${r.id}" placeholder="if_true: Reason이 참이면..." style="width:100%;font-size:10px;margin-bottom:3px">
-      <input id="exp-false-${r.id}" placeholder="if_false: Reason이 거짓이면..." style="width:100%;font-size:10px;margin-bottom:3px">
-      <input id="exp-output-${r.id}" placeholder="expected_output: 기대하는 통계량/차트..." style="width:100%;font-size:10px;margin-bottom:3px">
-      <button class="btn btn-accept" style="font-size:9px" onclick="fwCreateExp('${r.id}')">Create Experiment</button>
-    </div>`;
-    // Show existing experiments
-    html += `<div id="exp-list-${r.id}" style="margin-top:4px"></div>`;
-    html += `</div>`;
+function wizardGo(step) {
+  wizardStep = step;
+  document.querySelectorAll('.wizard-step').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.step) === step);
   });
+  renderWizardProgress(step);
+  // Show/hide conditional fields
+  updateBackendUrl();
+  updateLlmKey();
+}
 
-  // Rebut reasons
-  html += `<h3 style="color:#f85149;font-size:12px;margin:8px 0 4px">Rebut (${rebutReasons.length})</h3>`;
-  rebutReasons.forEach(r => {
-    html += `<div style="border-left:3px solid #f85149;padding:6px 10px;margin:4px 0;background:#161b22;border-radius:0 4px 4px 0;font-size:12px">`;
-    html += `<div>${r.statement}</div>`;
-    html += `<div style="color:#8b949e;font-size:10px;margin-top:2px">Bridge: ${r.bridge}</div>`;
-    if (r.evidences?.length) { html += `<div style="font-size:10px;margin-top:2px">${r.evidences.map(e => `<span class="badge" style="background:#30363d;margin:1px">${e.tag}: ${e.description.substring(0,30)}</span>`).join('')}</div>`; }
-    html += `<div id="exp-list-${r.id}" style="margin-top:4px"></div>`;
-    html += `</div>`;
+function wizardNext() { wizardGo(wizardStep + 1); }
+function wizardPrev() { if (wizardStep > 0) wizardGo(wizardStep - 1); }
+
+function selectRadio(el, groupName) {
+  el.closest('.radio-group').querySelectorAll('.radio-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type="radio"]').checked = true;
+  if (groupName === 'backend') updateBackendUrl();
+  if (groupName === 'llm') updateLlmKey();
+}
+
+function toggleCheck(el) {
+  const cb = el.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+}
+
+function updateBackendUrl() {
+  const val = document.querySelector('input[name="backend"]:checked');
+  const show = val && val.value === 'custom_http';
+  $('backendUrlGroup').classList.toggle('show', show);
+}
+
+function updateLlmKey() {
+  const val = document.querySelector('input[name="llm"]:checked');
+  const needsKey = val && ['claude_api', 'openai', 'google_ai', 'other'].includes(val.value);
+  $('llmKeyGroup').classList.toggle('show', needsKey);
+  $('llmModelGroup').classList.toggle('show', needsKey);
+}
+
+async function finishSetup() {
+  const gates = [];
+  $('gatesGroup').querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+    gates.push(cb.value);
   });
+  const backendType = document.querySelector('input[name="backend"]:checked')?.value || 'none';
+  const llmProvider = document.querySelector('input[name="llm"]:checked')?.value || 'claude_cli';
 
-  // Load experiments for all reasons after render
-  setTimeout(() => { reasons.forEach(r => fwLoadExps(r.id)); }, 100);
+  const payload = {
+    project_name: $('setupName').value || 'Untitled Project',
+    domain: $('setupDomain').value,
+    description: $('setupDesc').value,
+    backend_type: backendType,
+    llm_provider: llmProvider,
+    gates: gates,
+  };
+  if (backendType === 'custom_http') payload.backend_url = $('setupBackendUrl').value;
+  if ($('setupLlmKey').value) payload.llm_api_key = $('setupLlmKey').value;
+  if ($('setupLlmModel').value) payload.llm_model = $('setupLlmModel').value;
+
+  try {
+    await api('POST', '/api/setup/init', payload);
+    toast('프로젝트가 초기화되었습니다!', 'success');
+    renderTabs(false);
+    switchTab('research');
+  } catch (e) {
+    toast('설정 오류: ' + e.message, 'error');
+  }
+}
+
+// ──────────────────────────────────────────────
+// Research: Claims
+// ──────────────────────────────────────────────
+async function loadClaims() {
+  try {
+    const data = await api('GET', '/api/claims');
+    claims = data.claims || [];
+    renderClaimList();
+  } catch (e) {
+    $('claimList').innerHTML = '<div class="empty-state"><p>클레임을 불러올 수 없습니다.</p></div>';
+  }
+}
+
+function renderClaimList() {
+  const drafts = claims.filter(c => c.status !== 'accepted' && c.status !== 'rejected');
+  const accepted = claims.filter(c => c.status === 'accepted');
+  let html = '';
+
+  if (drafts.length > 0) {
+    html += '<div style="font-size:12px;color:var(--text-faint);margin-bottom:6px;padding:0 4px;">DRAFTS (' + drafts.length + ')</div>';
+    drafts.forEach(c => {
+      html += claimListItem(c);
+    });
+  }
+  if (accepted.length > 0) {
+    html += '<div style="font-size:12px;color:var(--green);margin:12px 0 6px;padding:0 4px;">ACCEPTED (' + accepted.length + ')</div>';
+    accepted.forEach(c => {
+      html += claimListItem(c, true);
+    });
+  }
+  if (claims.length === 0) {
+    html = '<div class="empty-state"><h3>가설이 없습니다</h3><p>위에서 아이디어를 입력하고 시작하세요.</p></div>';
+  }
+  $('claimList').innerHTML = html;
+}
+
+function claimListItem(c, isAccepted) {
+  const sel = c.id === selectedClaimId ? ' selected' : '';
+  const border = isAccepted ? 'border-left:3px solid var(--green);' : '';
+  const badge = c.status === 'accepted' ? '<span class="badge accepted">accepted</span>'
+    : c.status === 'rejected' ? '<span class="badge rejected">rejected</span>'
+    : '<span class="badge draft">draft</span>';
+  return '<div class="list-item' + sel + '" style="' + border + '" onclick="selectClaim(\'' + c.id + '\')">'
+    + '<div class="li-title">' + esc(c.statement || c.id) + '</div>'
+    + '<div class="li-meta">' + badge + ' ' + esc(c.trigger || '') + '</div>'
+    + '</div>';
+}
+
+async function selectClaim(id) {
+  selectedClaimId = id;
+  renderClaimList();
+  $('claimDetail').innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+  try {
+    const data = await api('GET', '/api/claims/' + id);
+    selectedClaimData = data;
+    renderClaimDetail(data);
+  } catch (e) {
+    $('claimDetail').innerHTML = '<div class="empty-state"><p>오류: ' + esc(e.message) + '</p></div>';
+  }
+}
+
+function renderClaimDetail(data) {
+  const c = data.claim || data;
+  const reasons = data.reasons || [];
+  const gateCheck = data.gate_check;
+
+  let html = '<div class="card">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">';
+  html += '<div><h3 style="font-size:17px;color:var(--text);margin-bottom:4px;">' + esc(c.statement) + '</h3>';
+  if (c.trigger) html += '<div style="font-size:13px;color:var(--text-faint);">계기: ' + esc(c.trigger) + '</div>';
+  html += '</div>';
+  const statusBadge = c.status === 'accepted' ? '<span class="badge accepted">Accepted</span>'
+    : c.status === 'rejected' ? '<span class="badge rejected">Rejected</span>'
+    : '<span class="badge draft">Draft</span>';
+  html += statusBadge;
+  html += '</div>';
+
+  // Gate check
+  if (gateCheck) {
+    const gp = gateCheck.pass || gateCheck.passed;
+    html += '<div style="margin-bottom:12px;"><span class="badge ' + (gp ? 'pass' : 'fail') + '">Gate: ' + (gp ? 'PASS' : 'FAIL') + '</span>';
+    if (gateCheck.details) html += ' <span style="font-size:12px;color:var(--text-faint);">' + esc(JSON.stringify(gateCheck.details)) + '</span>';
+    html += '</div>';
+  }
+
+  // Delete button
+  html += '<div style="margin-bottom:12px;">';
+  html += '<button class="btn btn-red btn-sm" onclick="deleteClaim(\'' + c.id + '\')">삭제</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // Reasons
+  html += '<h3 style="margin:16px 0 8px;font-size:14px;color:var(--text-dim);">Arguments</h3>';
+  if (reasons.length === 0) {
+    html += '<div style="font-size:13px;color:var(--text-faint);padding:8px 0;">아직 근거가 없습니다.</div>';
+  }
+  reasons.forEach(r => {
+    const rtype = r.reason_type || 'support';
+    html += '<div class="reason-card ' + rtype + '">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    html += '<strong style="font-size:14px;">' + esc(r.statement) + '</strong>';
+    html += '<span style="font-size:11px;color:' + (rtype === 'support' ? 'var(--green)' : 'var(--red)') + ';text-transform:uppercase;">' + rtype + '</span>';
+    html += '</div>';
+    if (r.bridge) html += '<div style="font-size:12px;color:var(--text-faint);margin-bottom:6px;">Bridge: ' + esc(r.bridge) + '</div>';
+
+    // Evidences
+    const evidences = r.evidences || [];
+    if (evidences.length > 0) {
+      html += '<div style="font-size:12px;color:var(--text-dim);margin:6px 0 4px;">Evidence:</div>';
+      evidences.forEach(ev => {
+        html += '<div class="evidence-item">[' + esc(ev.tag || '') + '] ' + esc(ev.description || '') + '</div>';
+      });
+    }
+
+    // Experiments
+    const experiments = r.experiments || [];
+    if (experiments.length > 0) {
+      html += '<div style="font-size:12px;color:var(--text-dim);margin:6px 0 4px;">Experiments:</div>';
+      experiments.forEach(exp => {
+        html += '<div class="experiment-item">';
+        html += '<div>' + esc(exp.description || '') + '</div>';
+        if (exp.method) html += '<div style="font-size:12px;color:var(--text-faint);">Method: ' + esc(exp.method) + '</div>';
+        if (exp.expected_output) html += '<div style="font-size:12px;color:var(--text-faint);">Expected: ' + esc(exp.expected_output) + '</div>';
+        if (exp.result !== undefined && exp.result !== null) {
+          html += '<div style="font-size:12px;color:var(--yellow);margin-top:4px;">Result: ' + esc(typeof exp.result === 'object' ? JSON.stringify(exp.result) : String(exp.result)) + '</div>';
+        } else {
+          html += '<button class="btn btn-outline btn-sm" style="margin-top:4px;" onclick="promptExperimentResult(\'' + exp.id + '\')">결과 입력</button>';
+        }
+        html += '</div>';
+      });
+    }
+
+    // Add evidence/experiment forms
+    html += '<div style="margin-top:8px;display:flex;gap:6px;">';
+    html += '<button class="btn btn-outline btn-sm" onclick="showAddEvidence(\'' + r.id + '\')">+ Evidence</button>';
+    html += '<button class="btn btn-outline btn-sm" onclick="showAddExperiment(\'' + r.id + '\')">+ Experiment</button>';
+    html += '</div>';
+
+    // Inline forms (hidden by default)
+    html += '<div id="evForm_' + r.id + '" style="display:none;margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;">';
+    html += '<div class="form-row"><div class="form-group" style="margin-bottom:6px;"><label>Tag</label><input id="evTag_' + r.id + '" placeholder="empirical, citation..."></div>';
+    html += '<div class="form-group" style="margin-bottom:6px;"><label>설명</label><input id="evDesc_' + r.id + '" placeholder="증거 설명..."></div></div>';
+    html += '<button class="btn btn-primary btn-sm" onclick="addEvidence(\'' + r.id + '\')">추가</button>';
+    html += '</div>';
+
+    html += '<div id="expForm_' + r.id + '" style="display:none;margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;">';
+    html += '<div class="form-group" style="margin-bottom:6px;"><label>설명</label><input id="expDesc_' + r.id + '" placeholder="실험 설명..."></div>';
+    html += '<div class="form-row"><div class="form-group" style="margin-bottom:6px;"><label>Method</label><input id="expMethod_' + r.id + '" placeholder="방법..."></div>';
+    html += '<div class="form-group" style="margin-bottom:6px;"><label>Expected Output</label><input id="expExpected_' + r.id + '" placeholder="예상 결과..."></div></div>';
+    html += '<button class="btn btn-primary btn-sm" onclick="addExperiment(\'' + r.id + '\')">추가</button>';
+    html += '</div>';
+
+    html += '</div>';
+  });
 
   // Add reason form
-  html += `<div style="margin-top:12px;padding:10px;background:#0d1117;border-radius:6px;border:1px solid #30363d">
-    <div style="font-size:11px;color:#8b949e;margin-bottom:6px">Add Reason</div>
-    <div style="display:flex;gap:4px;margin-bottom:4px">
-      <select id="fw-rtype" style="font-size:11px"><option value="support">Support</option><option value="rebut">Rebut</option></select>
-      <input id="fw-rstatement" placeholder="Statement..." style="flex:1;font-size:11px">
-    </div>
-    <div style="display:flex;gap:4px">
-      <input id="fw-rbridge" placeholder="Bridge: 왜 이 reason이 claim을 지지/반박하는가..." style="flex:1;font-size:11px">
-      <button class="btn btn-accept" style="font-size:10px" onclick="fwAddReason()">Add</button>
-    </div>
-  </div>`;
+  html += '<div class="card" style="margin-top:12px;">';
+  html += '<h3>근거 추가</h3>';
+  html += '<div class="form-row" style="margin-bottom:8px;">';
+  html += '<div class="form-group" style="margin-bottom:0;"><label>유형</label><select id="reasonType"><option value="support">Support (지지)</option><option value="rebut">Rebut (반박)</option></select></div>';
+  html += '<div class="form-group" style="margin-bottom:0;"><label>Bridge</label><input id="reasonBridge" placeholder="연결 논리..."></div>';
+  html += '</div>';
+  html += '<div class="form-group"><label>Statement</label><input id="reasonStatement" placeholder="근거 진술..."></div>';
+  html += '<button class="btn btn-primary btn-sm" onclick="addReason(\'' + c.id + '\')">근거 추가</button>';
+  html += '</div>';
 
-  // Action buttons (only for Draft)
-  if (c.status === 'Draft') {
-    html += `<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input id="fw-verdict-reason" placeholder="Accept/Reject 이유..." style="flex:1;min-width:200px">
-      <button class="btn btn-accept" onclick="fwAccept()" ${d.ready_to_accept?'':'disabled style="opacity:0.5"'}>Accept → Knowledge</button>
-      <button class="btn btn-reject" onclick="fwReject()">Reject</button>
-      <button class="btn btn-promote" onclick="fwRunAll()">Run All</button>
-      <button class="btn" style="background:#1f6feb;color:#fff" onclick="fwOpenLab()">Lab</button>
-      <button class="btn" style="background:#484f58;color:#f85149" onclick="fwDelete()">Delete</button>
-    </div>`;
-    if (!d.ready_to_accept) {
-      html += `<div style="font-size:10px;color:#d29922;margin-top:4px">Gate 미통과 — support Reason + Evidence 추가 필요</div>`;
-    }
+  // Verdict buttons
+  if (c.status !== 'accepted' && c.status !== 'rejected') {
+    html += '<div style="margin-top:16px;display:flex;gap:8px;">';
+    html += '<button class="btn btn-green" onclick="verdictClaim(\'' + c.id + '\', \'accept\')">Accept -> Knowledge</button>';
+    html += '<button class="btn btn-red" onclick="verdictClaim(\'' + c.id + '\', \'reject\')">Reject</button>';
+    html += '</div>';
   }
 
-  document.getElementById('fw-detail').innerHTML = html;
+  $('claimDetail').innerHTML = html;
 }
 
-async function fwAddReason() {
-  if (!fwSelectedClaim) return;
-  const reason_type = document.getElementById('fw-rtype').value;
-  const statement = document.getElementById('fw-rstatement').value.trim();
-  const bridge = document.getElementById('fw-rbridge').value.trim();
-  if (!statement || !bridge) return;
-  const d = await api('/api/framework/reasons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({claim_id:fwSelectedClaim,reason_type,statement,bridge})});
-  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
-  fwSelectClaim(fwSelectedClaim);
-  loadFramework();
+function showAddEvidence(rid) {
+  const el = $('evForm_' + rid);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function showAddExperiment(rid) {
+  const el = $('expForm_' + rid);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-async function fwAddEvidence(reasonId) {
-  const description = document.getElementById('ev-desc-'+reasonId).value.trim();
-  const tag = document.getElementById('ev-tag-'+reasonId).value;
-  if (!description) return;
-  const d = await api('/api/framework/evidence', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason_id:reasonId,tag,description})});
-  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
-  fwSelectClaim(fwSelectedClaim);
+async function addEvidence(rid) {
+  try {
+    await api('POST', '/api/reasons/' + rid + '/evidence', {
+      tag: $('evTag_' + rid).value,
+      description: $('evDesc_' + rid).value
+    });
+    toast('Evidence 추가됨', 'success');
+    if (selectedClaimId) selectClaim(selectedClaimId);
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-async function fwAccept() {
-  if (!fwSelectedClaim) return;
-  const reason = document.getElementById('fw-verdict-reason').value.trim();
-  if (!reason) { alert('Accept 이유를 입력하세요'); return; }
-  const d = await api('/api/framework/claims/'+fwSelectedClaim+'/accept', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
-  if (d.error) { alert(d.error + '\n' + JSON.stringify(d.gate||d.failed_reasons||'',null,2)); return; }
-  alert('Knowledge로 격상 완료!');
-  fwSelectClaim(fwSelectedClaim);
-  loadFramework();
+async function addExperiment(rid) {
+  try {
+    await api('POST', '/api/reasons/' + rid + '/experiment', {
+      description: $('expDesc_' + rid).value,
+      method: $('expMethod_' + rid).value,
+      expected_output: $('expExpected_' + rid).value
+    });
+    toast('Experiment 추가됨', 'success');
+    if (selectedClaimId) selectClaim(selectedClaimId);
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-function fwToggleExpForm(reasonId) {
-  const el = document.getElementById('exp-form-'+reasonId);
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-  // Load existing experiments
-  fwLoadExps(reasonId);
-}
-
-async function fwLoadExps(reasonId) {
-  const d = await api('/api/framework/experiments/reason/'+reasonId);
-  const el = document.getElementById('exp-list-'+reasonId);
-  if (!el) return;
-  const exps = d.experiments || [];
-  if (exps.length === 0) { el.innerHTML = ''; return; }
-  el.innerHTML = exps.map(e => {
-    const sc = {Designed:'#8b949e',Running:'#f0883e',Completed:'#1f6feb',Interpreted:'#3fb950'}[e.status]||'#8b949e';
-    const methodIcons = {Distributional:'📊',Conditional:'🔀',CrossSectional:'📈',DoseResponse:'📐',Regime:'🌦',Temporal:'⏳',MultiHorizon:'🎯',EntryExit:'🚪',Backtest:'💰'};
-    const mi = methodIcons[e.method] || '🔬';
-    let h = `<div style="font-size:10px;padding:4px 6px;margin:2px 0;border-left:2px solid ${sc};background:#161b22;border-radius:0 3px 3px 0">`;
-    h += `<div>${mi} <span style="color:#d2a8ff">[${e.method}]</span> ${e.description} <span style="color:${sc}">[${e.status}]</span></div>`;
-    if (e.status === 'Completed' && !e.verdict) {
-      const r = e.result || {};
-      const hint = r.verdict_hint || '';
-      const isSup = hint.includes('지지') || hint.includes('robust') || hint.includes('단조') || hint.includes('안정');
-      const isWeak = hint.includes('약화') || hint.includes('미유의') || hint.includes('불안정') || hint.includes('decay') || hint.includes('부족');
-      const recColor = isSup ? '#3fb950' : isWeak ? '#f85149' : '#d29922';
-      const recLabel = isSup ? '지지 추천' : isWeak ? '약화 추천' : '판단 필요';
-      h += `<div style="margin-top:4px;padding:5px 8px;background:#0d1117;border-radius:4px;border:1px solid ${recColor}44">`;
-      h += `<div style="color:${recColor};font-size:11px;font-weight:600">AI 추천: ${recLabel}</div>`;
-      if (hint) h += `<div style="font-size:10px;color:#8b949e;margin:2px 0">${hint}</div>`;
-      if (r.summary) h += `<div style="font-size:10px;color:#8b949e">${r.summary}</div>`;
-      h += `<div style="margin-top:4px;display:flex;gap:4px;align-items:center">
-        <input id="vrd-exp-${e.id}" placeholder="verdict 설명..." style="flex:1;font-size:11px" value="${hint.replace(/"/g,'&quot;')}">
-        <button class="btn btn-accept" style="font-size:10px;padding:3px 8px" onclick="fwVerdict('${e.id}',true)">지지</button>
-        <button class="btn btn-reject" style="font-size:10px;padding:3px 8px" onclick="fwVerdict('${e.id}',false)">약화</button>
-      </div></div>`;
-    }
-    if (e.verdict) {
-      h += `<div style="color:${e.verdict.supports_reason?'#3fb950':'#f85149'};font-size:9px">${e.verdict.supports_reason?'지지':'약화'}: ${e.verdict.explanation}</div>`;
-      if (e.verdict.gaps?.length) h += `<div style="color:#d29922;font-size:9px">Gaps: ${e.verdict.gaps.join(', ')}</div>`;
-    }
-    // Show structured result if available
-    if (e.status === 'Completed' || e.status === 'Interpreted') {
-      h += `<div style="cursor:pointer;color:#7c3aed;font-size:9px;margin-top:2px" onclick="fwToggleResult('${e.id}')">결과 보기 ▼</div>`;
-      h += `<div id="result-${e.id}" style="display:none"></div>`;
-    }
-    if (e.status === 'Designed') {
-      h += `<button class="btn btn-promote" style="font-size:8px;padding:1px 4px;margin-top:2px" onclick="fwSubmitResult('${e.id}')">결과 입력</button>`;
-    }
-    h += `</div>`;
-    return h;
-  }).join('');
-}
-
-async function fwCreateExp(reasonId) {
-  const method = document.getElementById('exp-method-'+reasonId).value;
-  const description = document.getElementById('exp-desc-'+reasonId).value.trim();
-  const if_true = document.getElementById('exp-true-'+reasonId).value.trim();
-  const if_false = document.getElementById('exp-false-'+reasonId).value.trim();
-  const expected_output = document.getElementById('exp-output-'+reasonId).value.trim();
-  if (!description || !if_true || !if_false || !expected_output) { alert('모든 필드를 입력하세요'); return; }
-  let config = {source:"dashboard", method};
-  if (method === 'multi_horizon') config.horizons = ["5m","15m","1h","4h","1d","3d","7d"];
-  if (method === 'entry_exit') { config.cached_horizons = ["5m","15m","1h","4h","1d"]; config.exit_conditions = []; config.max_hold_bars = 288; }
-  const d = await api('/api/framework/experiments', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason_id:reasonId,method,description,if_true,if_false,expected_output,config})});
-  if (d.error) { alert(d.error + '\n' + (d.gate?.errors||[]).join('\n')); return; }
-  document.getElementById('exp-form-'+reasonId).style.display='none';
-  fwSelectClaim(fwSelectedClaim);
-}
-
-async function fwSubmitResult(expId) {
-  const result = prompt('실험 결과 (JSON 또는 텍스트):');
-  if (!result) return;
+async function promptExperimentResult(expId) {
+  const result = prompt('실험 결과를 입력하세요 (JSON 또는 텍스트):');
+  if (result === null) return;
   let parsed;
-  try { parsed = JSON.parse(result); } catch { parsed = {text: result}; }
-  await api('/api/framework/experiments/'+expId+'/result', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({result:parsed})});
-  fwSelectClaim(fwSelectedClaim);
+  try { parsed = JSON.parse(result); } catch { parsed = result; }
+  try {
+    await api('POST', '/api/experiments/' + expId + '/result', { result: parsed });
+    toast('결과 기록됨', 'success');
+    if (selectedClaimId) selectClaim(selectedClaimId);
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-async function fwVerdict(expId, supports) {
-  const explanation = document.getElementById('vrd-exp-'+expId)?.value.trim();
-  if (!explanation) { alert('설명을 입력하세요'); return; }
-  const gapsStr = prompt('Gaps (콤마 구분, 없으면 빈칸):') || '';
-  const gaps = gapsStr ? gapsStr.split(',').map(s=>s.trim()).filter(s=>s) : [];
-  const d = await api('/api/framework/experiments/'+expId+'/verdict', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({supports_reason:supports,explanation,gaps})});
-  if (d.error) { alert(d.error + '\n' + JSON.stringify(d.gate||'',null,2)); return; }
-  alert('Verdict 완료 — Evidence 자동 생성됨');
-  fwSelectClaim(fwSelectedClaim);
+async function addReason(claimId) {
+  try {
+    await api('POST', '/api/claims/' + claimId + '/reason', {
+      reason_type: $('reasonType').value,
+      statement: $('reasonStatement').value,
+      bridge: $('reasonBridge').value
+    });
+    toast('근거 추가됨', 'success');
+    selectClaim(claimId);
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-function fwToggleResult(expId) {
-  const el = document.getElementById('result-'+expId);
-  if (!el) return;
-  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
-  el.style.display = 'block';
-  // Fetch experiment result
-  fwLoadResult(expId, el);
+async function verdictClaim(claimId, verdict) {
+  const reason = prompt(verdict === 'accept' ? '채택 사유:' : '기각 사유:');
+  if (reason === null) return;
+  try {
+    await api('POST', '/api/claims/' + claimId + '/verdict', { verdict, reason });
+    toast(verdict === 'accept' ? '가설이 채택되었습니다!' : '가설이 기각되었습니다.', verdict === 'accept' ? 'success' : 'info');
+    loadClaims();
+    selectedClaimId = null;
+    $('claimDetail').innerHTML = '<div class="empty-state"><h3>가설을 선택하세요</h3></div>';
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-async function fwLoadResult(expId, el) {
-  // Find result from the claim detail data
-  const d = await api('/api/framework/claims/'+fwSelectedClaim);
-  let result = null;
-  for (const r of d.reasons || []) {
-    // Check experiments via API
-  }
-  // Get directly from experiments list
-  const claims = await api('/api/framework/claims');
-  // Simpler: fetch all experiments for all reasons and find matching
-  for (const r of (d.reasons||[])) {
-    const exps = await api('/api/framework/experiments/reason/'+r.id);
-    for (const e of (exps.experiments||[])) {
-      if (e.id === expId) { result = e.result; break; }
-    }
-    if (result) break;
-  }
-
-  if (!result) { el.innerHTML = '<div style="color:#8b949e;font-size:10px">결과 없음</div>'; return; }
-
-  const verdictColor = (result.verdict_hint||'').includes('지지') ? '#3fb950' :
-                       (result.verdict_hint||'').includes('약화') ? '#f85149' : '#d29922';
-
-  let html = `<div style="margin-top:4px;padding:6px;background:#0d1117;border-radius:4px;border:1px solid #30363d;font-size:10px">`;
-  html += `<div style="color:#7c3aed;font-weight:600">[${result.method||'?'}] ${result.summary||''}</div>`;
-  html += `<div style="color:${verdictColor};margin:3px 0;font-weight:600">${result.verdict_hint||''}</div>`;
-
-  const metrics = result.metrics || {};
-  const keys = Object.keys(metrics);
-  if (keys.length > 0) {
-    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">`;
-    for (const k of keys) {
-      const v = typeof metrics[k] === 'number' ? metrics[k].toFixed(4) : metrics[k];
-      html += `<span style="background:#161b22;padding:2px 6px;border-radius:3px"><span style="color:#8b949e">${k}:</span> ${v}</span>`;
-    }
-    html += `</div>`;
-  }
-
-  if (result.details) {
-    html += `<div style="color:#8b949e;margin-top:4px">${result.details}</div>`;
-  }
-  html += `</div>`;
-  el.innerHTML = html;
+async function deleteClaim(claimId) {
+  if (!confirm('정말 삭제하시겠습니까?')) return;
+  try {
+    await api('DELETE', '/api/claims/' + claimId);
+    toast('삭제되었습니다.', 'info');
+    selectedClaimId = null;
+    $('claimDetail').innerHTML = '<div class="empty-state"><h3>가설을 선택하세요</h3></div>';
+    loadClaims();
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-async function fwOpenLab() {
-  if (!fwSelectedClaim) return;
-  // Create a Lab session with claim context
-  const claim = await api('/api/framework/claims/'+fwSelectedClaim);
-  const name = (claim.claim?.statement || 'Claim').substring(0, 30) + '...';
-  const d = await api('/api/chat/sessions', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    name: name,
-    target_type: 'claim',
-    target_id: fwSelectedClaim,
-  })});
-  if (d.id) {
-    showTab('lab');
-    await loadSessions();
-    await selectSession(d.id);
-  }
+async function autoGenerate() {
+  const idea = $('ideaInput').value.trim();
+  if (!idea) { toast('아이디어를 입력하세요.', 'error'); return; }
+  $('autoGenBtn').disabled = true;
+  $('autoGenBtn').textContent = '생성 중...';
+  try {
+    const data = await api('POST', '/api/claims/auto-generate', { idea });
+    const s = data.suggestion || data;
+    $('claimStatement').value = s.statement || '';
+    $('claimTrigger').value = s.trigger || '';
+    $('claimKeywords').value = (s.keywords || []).join(', ');
+    $('manualClaimForm').style.display = 'block';
+    $('manualToggle').textContent = '수동 입력 닫기';
+    toast('가설이 생성되었습니다. 확인 후 생성 버튼을 클릭하세요.', 'success');
+  } catch (e) { toast('자동 생성 오류: ' + e.message, 'error'); }
+  $('autoGenBtn').disabled = false;
+  $('autoGenBtn').textContent = 'Auto-Generate';
 }
 
-async function fwDelete() {
-  if (!fwSelectedClaim) return;
-  if (!confirm('이 Claim과 모든 Reasons/Experiments를 삭제합니다. 계속?')) return;
-  await api('/api/framework/claims/'+fwSelectedClaim, {method:'DELETE'});
-  fwSelectedClaim = null;
-  document.getElementById('fw-detail').innerHTML = '<p style="color:#8b949e">← Claim을 선택하세요</p>';
-  loadFramework();
+async function createClaim() {
+  const kw = $('claimKeywords').value.split(',').map(s => s.trim()).filter(Boolean);
+  try {
+    await api('POST', '/api/claims', {
+      statement: $('claimStatement').value,
+      trigger: $('claimTrigger').value,
+      keywords: kw
+    });
+    toast('가설이 생성되었습니다!', 'success');
+    $('claimStatement').value = '';
+    $('claimTrigger').value = '';
+    $('claimKeywords').value = '';
+    $('ideaInput').value = '';
+    loadClaims();
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-async function fwRunAll() {
-  if (!fwSelectedClaim) return;
-  const d = await api('/api/framework/claims/'+fwSelectedClaim+'/run-all', {method:'POST'});
-  if (d.n_started === 0) { alert('실행할 Designed 실험이 없습니다'); return; }
-  fwSelectClaim(fwSelectedClaim);
-  loadFramework();
+function toggleManualForm() {
+  const form = $('manualClaimForm');
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  $('manualToggle').textContent = visible ? '수동 입력 열기' : '수동 입력 닫기';
 }
 
-async function fwReject() {
-  if (!fwSelectedClaim) return;
-  const reason = document.getElementById('fw-verdict-reason').value.trim() || 'rejected';
-  const d = await api('/api/framework/claims/'+fwSelectedClaim+'/reject', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
-  fwSelectClaim(fwSelectedClaim);
-  loadFramework();
-}
-
-// ═══ KNOWLEDGE ═════════════════════════════════════════════════════
+// ──────────────────────────────────────────────
+// Knowledge
+// ──────────────────────────────────────────────
 async function loadKnowledge() {
-  const filter = document.getElementById('kb-filter').value;
-  const all = await api('/api/knowledge/insights/pending');
-  // Get all insights via search
-  const search = await api('/api/knowledge/insights/search', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'',top_k:200})});
+  try {
+    const data = await api('GET', '/api/claims');
+    const accepted = (data.claims || []).filter(c => c.status === 'accepted');
+    renderKnowledgeList(accepted);
+  } catch (e) {
+    $('knowledgeList').innerHTML = '<div class="empty-state"><p>데이터를 불러올 수 없습니다.</p></div>';
+  }
+}
 
-  // Merge: pending + accepted
-  let insights = all.pending || [];
-  // Add accepted from the DB via search results
-  const searchResults = (search.results||[]).map(r => ({id:r.insight_id, text:r.text, tags:r.tags, status:r.status, maturity:r.maturity, score:r.score}));
-
-  // Combine unique
-  const seen = new Set(insights.map(i => i.id));
-  for (const r of searchResults) { if (!seen.has(r.id)) { insights.push(r); seen.add(r.id); } }
-
-  // Filter
-  if (filter === 'accepted') insights = insights.filter(i => i.status === 'Accepted');
-  else if (filter === 'mature') insights = insights.filter(i => i.maturity === 'Mature');
-  else if (filter === 'thesis') insights = insights.filter(i => (i.tags||[]).includes('thesis'));
-  else if (filter === 'argument') insights = insights.filter(i => (i.tags||[]).some(t => t.includes('argument')));
-
-  // Stats
-  const nTotal = insights.length;
-  const nAccepted = insights.filter(i => i.status === 'Accepted').length;
-  const nThesis = insights.filter(i => (i.tags||[]).includes('thesis')).length;
-  const nArgs = insights.filter(i => (i.tags||[]).some(t => t.includes('argument'))).length;
-
-  document.getElementById('kb-stats').innerHTML = [
-    {label:'Total', value:nTotal},
-    {label:'Accepted', value:nAccepted, cls:'positive'},
-    {label:'Theses', value:nThesis},
-    {label:'Arguments', value:nArgs},
-  ].map(c => `<div class="card"><h3>${c.label}</h3><div class="value ${c.cls||''}">${c.value}</div></div>`).join('');
-
-  // Render
-  document.getElementById('kb-list').innerHTML = insights.length === 0
-    ? '<p style="color:#8b949e">No knowledge yet</p>'
-    : insights.map(i => {
-      const tags = (i.tags||[]);
-      const isThesis = tags.includes('thesis');
-      const isFor = tags.includes('argument-for');
-      const isAgainst = tags.includes('argument-against');
-      const isPremise = tags.includes('premise');
-      const isExp = tags.includes('experiment');
-
-      const borderColor = isThesis ? '#7c3aed' : isFor ? '#3fb950' : isAgainst ? '#f85149' : isPremise ? '#d2a8ff' : isExp ? '#f0883e' : '#30363d';
-      const icon = isThesis ? '📋' : isFor ? '✓' : isAgainst ? '✗' : isPremise ? '💡' : isExp ? '🔬' : '📝';
-      const statusBadge = i.status ? `<span class="badge ${(i.status||'').toLowerCase()}">${i.status}</span>` : '';
-
-      return `<div style="border-left:3px solid ${borderColor};padding:10px 14px;margin:6px 0;background:#161b22;border-radius:0 6px 6px 0">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span>${icon}</span>
-          <span style="font-size:13px;flex:1">${i.text}</span>
-          ${statusBadge}
-        </div>
-        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
-          ${tags.map(t => `<span style="background:#30363d;padding:1px 6px;border-radius:3px;font-size:10px">${t}</span>`).join('')}
-        </div>
-      </div>`;
-    }).join('');
+function renderKnowledgeList(items) {
+  if (items.length === 0) {
+    $('knowledgeList').innerHTML = '<div class="empty-state"><h3>축적된 지식이 없습니다</h3><p>Research 탭에서 가설을 검증하고 채택하세요.</p></div>';
+    return;
+  }
+  let html = '';
+  items.forEach(c => {
+    html += '<div class="card" style="border-left:3px solid var(--green);">';
+    html += '<div style="font-size:15px;font-weight:500;margin-bottom:4px;">' + esc(c.statement) + '</div>';
+    if (c.trigger) html += '<div style="font-size:13px;color:var(--text-faint);">' + esc(c.trigger) + '</div>';
+    if (c.keywords && c.keywords.length) {
+      html += '<div style="margin-top:6px;">';
+      c.keywords.forEach(k => { html += '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:rgba(124,58,237,.15);color:var(--accent);margin-right:4px;">' + esc(k) + '</span>'; });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  $('knowledgeList').innerHTML = html;
 }
 
 async function searchKnowledge() {
-  const q = document.getElementById('kb-search').value.trim();
+  const q = $('knowledgeSearch').value.trim();
   if (!q) { loadKnowledge(); return; }
-  const d = await api('/api/knowledge/insights/search', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q,top_k:20})});
-  document.getElementById('kb-list').innerHTML = (d.results||[]).map(r =>
-    `<div style="border-left:3px solid #7c3aed;padding:10px 14px;margin:6px 0;background:#161b22;border-radius:0 6px 6px 0">
-      <div style="font-size:13px">${r.text}</div>
-      <div style="font-size:10px;color:#8b949e;margin-top:4px">score: ${r.score.toFixed(2)} | ${r.tags.join(', ')}</div>
-    </div>`
-  ).join('') || '<p style="color:#8b949e">No results</p>';
+  try {
+    const data = await api('GET', '/api/graph/search?q=' + encodeURIComponent(q) + '&top_k=20');
+    const nodes = data.nodes || data.results || [];
+    if (nodes.length === 0) {
+      $('knowledgeList').innerHTML = '<div class="empty-state"><p>"' + esc(q) + '"에 대한 결과가 없습니다.</p></div>';
+      return;
+    }
+    let html = '<div style="font-size:12px;color:var(--text-faint);margin-bottom:8px;">' + nodes.length + '개 결과</div>';
+    nodes.forEach(n => {
+      html += '<div class="card">';
+      html += '<div style="font-size:14px;font-weight:500;">' + esc(n.label || n.statement || n.id || '') + '</div>';
+      if (n.score !== undefined) html += '<div style="font-size:12px;color:var(--text-faint);">relevance: ' + Number(n.score).toFixed(3) + '</div>';
+      html += '</div>';
+    });
+    $('knowledgeList').innerHTML = html;
+  } catch (e) { toast('검색 오류: ' + e.message, 'error'); }
 }
 
-// ═══ LAB ═══════════════════════════════════════════════════════════
-let currentSessionId = null;
-let pollingInterval = null;
+// ──────────────────────────────────────────────
+// Lab
+// ──────────────────────────────────────────────
+async function loadSessions() {
+  try {
+    const data = await api('GET', '/api/lab/sessions');
+    labSessions = data.sessions || [];
+    renderSessionList();
+  } catch (e) {
+    $('sessionList').innerHTML = '<div style="font-size:13px;color:var(--text-faint);padding:8px;">세션을 불러올 수 없습니다.</div>';
+  }
+}
 
-function renderMd(text) {
-  if (!text) return '';
-  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre style="background:#161b22;padding:8px;border-radius:4px;font-size:11px"><code>$2</code></pre>')
-    .replace(/`([^`]+)`/g, '<code style="background:#161b22;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^### (.+)$/gm, '<div style="font-size:13px;font-weight:600;margin:6px 0 3px">$1</div>')
-    .replace(/^## (.+)$/gm, '<div style="font-size:14px;font-weight:600;margin:8px 0 3px">$1</div>')
-    .replace(/^- (.+)$/gm, '<div style="padding-left:10px">• $1</div>')
-    .replace(/\n\n/g, '<div style="height:6px"></div>')
-    .replace(/\n/g, '<br>');
+function renderSessionList() {
+  if (labSessions.length === 0) {
+    $('sessionList').innerHTML = '<div style="font-size:13px;color:var(--text-faint);padding:8px;">세션이 없습니다. 새 세션을 만드세요.</div>';
+    return;
+  }
+  let html = '';
+  labSessions.forEach(s => {
+    const sel = s.id === selectedSessionId ? ' selected' : '';
+    html += '<div class="list-item' + sel + '" onclick="selectSession(\'' + s.id + '\')">';
+    html += '<div class="li-title">' + esc(s.title || s.id) + '</div>';
+    html += '<div class="li-meta">' + (s.claim_id ? 'Claim: ' + esc(s.claim_id) : '') + '</div>';
+    html += '</div>';
+  });
+  $('sessionList').innerHTML = html;
+}
+
+function showNewSession() {
+  const el = $('newSessionForm');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 async function createSession() {
-  const name = document.getElementById('new-session-name').value || 'New';
-  const type = document.getElementById('new-session-type').value;
-  const d = await api('/api/chat/sessions', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,target_type:type,target_id:null})});
-  document.getElementById('new-session-name').value = '';
-  loadSessions();
-  if (d.id) selectSession(d.id);
+  const title = $('sessionTitle').value.trim();
+  if (!title) { toast('제목을 입력하세요.', 'error'); return; }
+  const payload = { title };
+  const cid = $('sessionClaimId').value.trim();
+  if (cid) payload.claim_id = cid;
+  try {
+    const data = await api('POST', '/api/lab/sessions', payload);
+    toast('세션이 생성되었습니다!', 'success');
+    $('sessionTitle').value = '';
+    $('sessionClaimId').value = '';
+    $('newSessionForm').style.display = 'none';
+    loadSessions();
+    if (data.id) selectSession(data.id);
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
-async function loadSessions() {
-  const d = await api('/api/chat/sessions');
-  document.getElementById('session-list').innerHTML = (d.sessions||[]).map(s => {
-    const active = s.id===currentSessionId;
-    return `<div style="padding:8px;cursor:pointer;border-radius:4px;margin:3px 0;background:${active?'#1f6feb22':'#0d1117'};border:1px solid ${active?'#1f6feb':'#21262d'}" onclick="selectSession('${s.id}')">
-      <span style="font-size:12px">${s.name}</span>
-      <span style="cursor:pointer;float:right;color:#f85149;font-size:11px" onclick="event.stopPropagation();deleteSession('${s.id}')">x</span>
-    </div>`;
-  }).join('');
-}
+
 async function selectSession(id) {
-  currentSessionId = id;
-  loadSessions();
-  const d = await api('/api/chat/sessions/'+id);
-  document.getElementById('chat-header').innerHTML = `<strong>${d.session?.name}</strong>`;
-  const msgs = (d.messages||[]);
-  document.getElementById('chat-messages').innerHTML = msgs.map(m => `
-    <div style="margin:6px 0;${m.role==='user'?'text-align:right':''}">
-      <div style="display:inline-block;max-width:80%;padding:8px 10px;border-radius:8px;background:${m.role==='user'?'#1f6feb':'#21262d'};text-align:left">
-        <div style="font-size:12px;line-height:1.4">${m.content ? renderMd(m.content) : (m.status==='Processing'?'<span style="color:#d2a8ff">Processing...</span>':'')}</div>
-      </div>
-    </div>`).join('');
-  document.getElementById('chat-messages').scrollTop = 999999;
-}
-async function sendChat() {
-  if (!currentSessionId) return;
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim(); if (!msg) return; input.value = '';
-  const d = await api('/api/chat/send', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:currentSessionId,content:msg})});
-  const sess = await api('/api/chat/sessions/'+currentSessionId); selectSession(currentSessionId);
-  if (d.assistant_msg_id) {
-    if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(async () => {
-      const m = await api('/api/chat/messages/'+d.assistant_msg_id);
-      if (m.status==='Completed'||m.status==='Failed') { clearInterval(pollingInterval); selectSession(currentSessionId); }
-    }, 2000);
+  selectedSessionId = id;
+  renderSessionList();
+  try {
+    const data = await api('GET', '/api/lab/sessions/' + id);
+    chatMessages = data.messages || [];
+    renderChat(data.session);
+  } catch (e) {
+    $('chatArea').innerHTML = '<div class="empty-state"><p>오류: ' + esc(e.message) + '</p></div>';
   }
 }
-async function deleteSession(id) {
-  await api('/api/chat/sessions/'+id, {method:'DELETE'});
-  if (currentSessionId===id) currentSessionId=null;
-  loadSessions();
+
+function renderChat(session) {
+  let html = '<div class="chat-container">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px;">';
+  html += '<div style="font-size:15px;font-weight:500;">' + esc(session?.title || '') + '</div>';
+  html += '<button class="btn btn-red btn-sm" onclick="deleteSession(\'' + selectedSessionId + '\')">세션 삭제</button>';
+  html += '</div>';
+  html += '<div class="chat-messages" id="chatMessages">';
+  if (chatMessages.length === 0) {
+    html += '<div style="text-align:center;color:var(--text-faint);padding:20px;">메시지가 없습니다. 아래에서 대화를 시작하세요.</div>';
+  }
+  chatMessages.forEach(m => {
+    const role = m.role || 'user';
+    html += '<div class="chat-msg ' + role + '">';
+    html += '<div class="msg-role">' + (role === 'user' ? 'You' : 'AI') + '</div>';
+    html += '<div class="msg-body">' + renderSimpleMarkdown(m.content || '') + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div class="chat-input-row">';
+  html += '<input id="chatInput" placeholder="메시지 입력..." onkeydown="if(event.key===\'Enter\')sendChat()">';
+  html += '<button class="btn btn-primary" onclick="sendChat()">전송</button>';
+  html += '</div>';
+  html += '</div>';
+  $('chatArea').innerHTML = html;
+  // Scroll to bottom
+  const msgBox = $('chatMessages');
+  if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
 }
 
-// ═══ SETTINGS ═════════════════════════════════════════════════════
-async function loadSettings() {
-  const ov = await api('/api/dashboard/overview');
-  const backend = await api('/api/backend/status');
-  const profile = await api('/api/adaptive/profile');
+function renderSimpleMarkdown(text) {
+  // Minimal markdown: bold, italic, code blocks, inline code
+  let s = esc(text);
+  s = s.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--bg);padding:8px;border-radius:4px;overflow-x:auto;font-size:13px;margin:4px 0;">$1</pre>');
+  s = s.replace(/`([^`]+)`/g, '<code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-size:13px;">$1</code>');
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  return s;
+}
 
-  document.getElementById('adaptive-status').innerHTML = profile.adaptive_mode
-    ? '<span style="color:#3fb950">ON</span>' : '<span style="color:#8b949e">OFF</span>';
+async function sendChat() {
+  const input = $('chatInput');
+  if (!input) return;
+  const content = input.value.trim();
+  if (!content || !selectedSessionId) return;
+  input.value = '';
+  input.disabled = true;
 
-  // Backend status card
-  let bhtml = `<div class="value ${backend.alive?'positive':'negative'}">${backend.alive?'Online':'Offline'}</div>`;
-  if (backend.type) bhtml += `<div style="font-size:11px;color:#8b949e;margin-top:4px">Type: ${backend.type}</div>`;
-  if (backend.url || backend.dir) bhtml += `<div style="font-size:11px;color:#8b949e">URL: ${backend.url || backend.dir || '-'}</div>`;
-  if (backend.command) bhtml += `<div style="font-size:11px;color:#8b949e">Cmd: ${backend.command}</div>`;
-  document.getElementById('backend-status').innerHTML = bhtml;
-
-  document.getElementById('settings-stats').innerHTML = `<div style="font-size:13px">
-    Claims: ${ov.knowledge.n_claims} | Knowledge: ${ov.knowledge.n_knowledge} | Reasons: ${ov.knowledge.n_reasons} | Experiments: ${ov.knowledge.n_fw_experiments}
-  </div>`;
-  loadLlmRouting();
-
-  const hooks = profile.hooks || [];
-  const tendencies = profile.tendencies || {};
-  document.getElementById('settings-hooks').innerHTML =
-    Object.entries(tendencies).map(([k,v]) => `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px">
-      <span style="color:#7c3aed">${k}:</span> <input value="${v}" style="width:70%" onchange="updateTendency('${k}',this.value)">
-    </div>`).join('') +
-    hooks.map((h,i) => `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px">
-      <input type="checkbox" ${h.active?'checked':''} onchange="updateHook(${i},this.checked)">
-      <span style="color:#8b949e">${h.trigger}:</span> ${h.instruction}
-    </div>`).join('');
+  // Optimistic add user message
+  chatMessages.push({ role: 'user', content });
+  const session = labSessions.find(s => s.id === selectedSessionId);
+  renderChat(session);
 
   try {
-    const blog = await api('/api/monitor/backend-log');
-    const rlog = await api('/api/monitor/rust-log');
-    document.getElementById('settings-log').textContent = '--- Backend ---\n' + (blog.log||'').slice(-500) + '\n\n--- Rust ---\n' + (rlog.log||'').slice(-500);
-  } catch(e) {}
+    const data = await api('POST', '/api/lab/send', { session_id: selectedSessionId, content });
+    // Add assistant message
+    chatMessages.push({ role: 'assistant', content: data.content || '' });
+    renderChat(session);
+  } catch (e) {
+    chatMessages.push({ role: 'assistant', content: '[Error] ' + e.message });
+    renderChat(session);
+    toast('전송 오류: ' + e.message, 'error');
+  }
+  input.disabled = false;
+  if ($('chatInput')) $('chatInput').focus();
 }
-async function toggleAdaptive() { await api('/api/adaptive/toggle', {method:'POST'}); loadSettings(); }
+
+async function deleteSession(id) {
+  if (!confirm('세션을 삭제하시겠습니까?')) return;
+  try {
+    await api('DELETE', '/api/lab/sessions/' + id);
+    toast('세션이 삭제되었습니다.', 'info');
+    selectedSessionId = null;
+    $('chatArea').innerHTML = '<div class="empty-state"><h3>Lab 세션</h3><p>AI와 자유롭게 탐구하고 실험하세요.</p></div>';
+    loadSessions();
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
+}
+
+// ──────────────────────────────────────────────
+// Settings
+// ──────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const [health, setupStatus] = await Promise.all([
+      api('GET', '/api/health').catch(() => null),
+      api('GET', '/api/setup/status').catch(() => null)
+    ]);
+
+    const cfg = setupStatus?.current_config || {};
+    $('settingsProject').innerHTML = '<div><strong>' + esc(cfg.project_name || '-') + '</strong></div>'
+      + '<div style="margin-top:4px;">도메인: ' + esc(cfg.domain || '-') + '</div>';
+
+    if (health) {
+      $('settingsBackend').innerHTML = '<div>타입: ' + esc(health.backend?.type || cfg.backend_type || '-') + '</div>'
+        + '<div>상태: ' + (health.backend?.alive ? '<span style="color:var(--green);">Active</span>' : '<span style="color:var(--red);">Inactive</span>') + '</div>';
+
+      $('settingsLlm').innerHTML = '<div>프로바이더: ' + esc(health.llm?.provider || cfg.llm_provider || '-') + '</div>'
+        + '<div>모델: ' + esc(health.llm?.model || '-') + '</div>';
+
+      $('settingsGraph').innerHTML = '<div>노드: ' + (health.graph?.nodes ?? '-') + '</div>'
+        + '<div>엣지: ' + (health.graph?.edges ?? '-') + '</div>';
+
+      let hhtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;">';
+      const checks = [
+        { label: 'API', ok: health.status === 'ok' || health.status === 'healthy' },
+        { label: 'Graph', ok: health.graph?.status !== 'error' },
+        { label: 'Backend', ok: health.backend?.alive },
+        { label: 'LLM', ok: health.llm?.status !== 'error' }
+      ];
+      checks.forEach(ch => {
+        hhtml += '<div style="padding:8px;border-radius:6px;background:var(--bg);text-align:center;">';
+        hhtml += '<div style="font-size:20px;">' + (ch.ok ? '&#9679;' : '&#9675;') + '</div>';
+        hhtml += '<div style="font-size:12px;color:' + (ch.ok ? 'var(--green)' : 'var(--red)') + ';">' + ch.label + '</div>';
+        hhtml += '</div>';
+      });
+      hhtml += '</div>';
+      $('settingsHealth').innerHTML = hhtml;
+
+      // Update header status
+      $('statusDot').className = 'status-dot ' + (health.status === 'ok' || health.status === 'healthy' ? 'ok' : 'err');
+      $('statusText').textContent = cfg.project_name || 'amure-do';
+    } else {
+      $('settingsHealth').innerHTML = '<div style="color:var(--red);">서버에 연결할 수 없습니다.</div>';
+    }
+  } catch (e) {
+    $('settingsHealth').innerHTML = '<div style="color:var(--red);">오류: ' + esc(e.message) + '</div>';
+  }
+}
 
 async function startBackend() {
-  const d = await api('/api/backend/start', {method:'POST'});
-  if (d.error) { alert('Backend start failed: ' + d.error); return; }
-  alert('Backend start requested');
-  setTimeout(loadSettings, 2000);
+  try {
+    await api('POST', '/api/backend/start');
+    toast('백엔드가 시작되었습니다.', 'success');
+    loadSettings();
+  } catch (e) { toast('오류: ' + e.message, 'error'); }
 }
 
-// ═══ LLM ROUTING with Provider Presets ═══════════════════════════
-const PROVIDER_PRESETS = {
-  claude_cli: { model: '', url: '', needsKey: false, needsUrl: false },
-  claude_api: { model: 'claude-sonnet-4-20250514', url: '', needsKey: true, needsUrl: false },
-  openai: { model: 'gpt-4o', url: '', needsKey: true, needsUrl: false },
-  google: { model: 'gemini-2.0-flash', url: '', needsKey: true, needsUrl: false },
-  azure: { model: '', url: '', needsKey: true, needsUrl: true },
-  groq: { model: 'llama-3.1-70b-versatile', url: 'https://api.groq.com/openai/v1', needsKey: true, needsUrl: false },
-  together: { model: 'meta-llama/Llama-3-70b-chat-hf', url: 'https://api.together.xyz/v1', needsKey: true, needsUrl: false },
-  ollama: { model: 'llama3.1', url: 'http://localhost:11434', needsKey: false, needsUrl: false },
-  lmstudio: { model: 'default', url: 'http://localhost:1234', needsKey: false, needsUrl: false },
-  openai_compatible: { model: '', url: '', needsKey: false, needsUrl: true },
-  custom: { model: '', url: '', needsKey: false, needsUrl: true },
-};
-
-function onProviderChange() {
-  const provider = document.getElementById('llm-provider').value;
-  const preset = PROVIDER_PRESETS[provider];
-  if (!preset) return;
-
-  // Auto-fill model and URL
-  document.getElementById('llm-model').value = preset.model;
-  document.getElementById('llm-model').placeholder = preset.model ? `model (${preset.model})` : 'model name...';
-  document.getElementById('llm-apiurl').value = preset.url;
-
-  // Show/hide fields based on provider needs
-  const keyEl = document.getElementById('llm-apikey');
-  const urlEl = document.getElementById('llm-apiurl');
-
-  if (preset.needsKey) {
-    keyEl.style.display = '';
-    keyEl.placeholder = 'API key (required)';
-    keyEl.style.borderColor = '#d29922';
-  } else {
-    keyEl.style.display = '';
-    keyEl.placeholder = 'API key (not needed)';
-    keyEl.style.borderColor = '#30363d';
-    keyEl.value = '';
-  }
-
-  if (preset.needsUrl) {
-    urlEl.style.display = '';
-    urlEl.placeholder = 'API URL (required)';
-    urlEl.style.borderColor = '#d29922';
-  } else if (preset.url) {
-    urlEl.style.display = '';
-    urlEl.placeholder = `URL (${preset.url})`;
-    urlEl.style.borderColor = '#30363d';
-  } else {
-    urlEl.style.display = '';
-    urlEl.placeholder = 'Custom URL (optional)';
-    urlEl.style.borderColor = '#30363d';
-  }
-}
-
-async function loadLlmRouting() {
-  const d = await api('/api/framework/llm/routing');
-  const el = document.getElementById('llm-routing');
-  let html = '';
-  // Default
-  html += `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px;display:flex;align-items:center;gap:8px">
-    <span style="color:#7c3aed;width:80px;font-weight:600">default</span>
-    <span>${d.default?.provider||'claude_cli'}</span>
-    <span style="color:#8b949e">${d.default?.model||'(default)'}</span>
-    <span style="color:#3fb950;font-size:10px">${d.default?.api_key?'key set':'no key'}</span>
-  </div>`;
-  // Roles
-  const roles = d.roles || {};
-  for (const [role, cfg] of Object.entries(roles)) {
-    html += `<div style="padding:6px;border-bottom:1px solid #21262d;font-size:12px;display:flex;align-items:center;gap:8px">
-      <span style="color:#d2a8ff;width:80px;font-weight:600">${role}</span>
-      <span>${cfg.provider}</span>
-      <span style="color:#8b949e">${cfg.model||'(default)'}</span>
-      <span style="color:#3fb950;font-size:10px">${cfg.api_key?'key set':'no key'}</span>
-      <span style="cursor:pointer;color:#f85149;font-size:10px;margin-left:auto" onclick="deleteLlmRole('${role}')">remove</span>
-    </div>`;
-  }
-  if (Object.keys(roles).length === 0) {
-    html += '<div style="padding:6px;font-size:11px;color:#8b949e">No role overrides — all using default</div>';
-  }
-  el.innerHTML = html;
-}
-
-async function saveLlmRole() {
-  const role = document.getElementById('llm-role').value;
-  const provider = document.getElementById('llm-provider').value;
-  const model = document.getElementById('llm-model').value;
-  const api_key = document.getElementById('llm-apikey').value || null;
-  const api_url = document.getElementById('llm-apiurl').value || null;
-  await api('/api/framework/llm/routing', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role,provider,model,api_key,api_url})});
-  document.getElementById('llm-model').value = '';
-  document.getElementById('llm-apikey').value = '';
-  document.getElementById('llm-apiurl').value = '';
-  loadLlmRouting();
-}
-
-async function deleteLlmRole(role) {
-  await api('/api/framework/llm/routing/'+role, {method:'DELETE'});
-  loadLlmRouting();
-}
-async function updateTendency(k,v) { await api('/api/adaptive/tendency', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,value:v})}); }
-async function updateHook(i,active) { await api('/api/adaptive/hook', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({index:i,active})}); }
-
-// ═══ ACTIVITY ═════════════════════════════════════════════════════
-let lastActivityId = 0;
-let activityPoll = null;
-
-async function loadActivity() {
-  const d = await api('/api/framework/activity?since=' + lastActivityId);
-  const feed = document.getElementById('activity-feed');
-  const events = d.events || [];
-  if (events.length === 0 && lastActivityId === 0) { feed.innerHTML = '<div style="color:#8b949e">No activity yet</div>'; return; }
-  document.getElementById('activity-count').textContent = `● Live`;
-
-  const catColors = {claim:'#7c3aed',reason:'#d2a8ff',experiment:'#f0883e',verdict:'#3fb950',gate:'#f85149',llm:'#d29922',search:'#1f6feb',system:'#8b949e'};
-  const catIcons = {claim:'📋',reason:'💡',experiment:'🔬',verdict:'⚖️',gate:'🚧',llm:'🤖',search:'🔍',system:'⚙️'};
-
-  events.forEach(e => {
-    const color = catColors[e.category] || '#8b949e';
-    const icon = catIcons[e.category] || '📝';
-    const time = new Date(e.timestamp).toLocaleTimeString();
-    const el = document.createElement('div');
-    el.style.cssText = 'padding:3px 0;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:6px';
-    el.innerHTML = `<span style="color:#484f58;font-size:10px;width:60px">${time}</span>
-      <span>${icon}</span>
-      <span style="color:${color};font-size:10px;width:70px">[${e.category}]</span>
-      <span style="flex:1">${e.summary}</span>
-      ${e.detail ? `<span style="color:#8b949e;font-size:9px">${e.detail}</span>` : ''}`;
-    feed.insertBefore(el, feed.firstChild);
-    lastActivityId = Math.max(lastActivityId, e.id);
-  });
-}
-
-let activityMode = 'events';
-let backendLogBytes = 0;
-
-function setActivityMode(mode) {
-  activityMode = mode;
-  document.getElementById('activity-feed').style.display = mode === 'events' ? 'block' : 'none';
-  document.getElementById('backend-log-feed').style.display = mode === 'backend' ? 'block' : 'none';
-  document.getElementById('activity-mode-events').style.color = mode === 'events' ? '#7c3aed' : '#8b949e';
-  document.getElementById('activity-mode-backend').style.color = mode === 'backend' ? '#7c3aed' : '#8b949e';
-  if (mode === 'backend') loadBackendLog();
-}
-
-async function loadBackendLog() {
-  const d = await api('/api/backend/log?since_bytes=' + backendLogBytes);
-  if (d.log) {
-    const el = document.getElementById('backend-log-feed');
-    el.textContent += d.log;
-    el.scrollTop = el.scrollHeight;
-    backendLogBytes = d.total_bytes;
-  }
-}
-
-function startActivityPoll() {
-  activityPoll = setInterval(() => {
-    if (activityMode === 'events') loadActivity();
-    else loadBackendLog();
-  }, 3000);
-}
-function stopActivityPoll() { if (activityPoll) { clearInterval(activityPoll); activityPoll = null; } }
-
+// ──────────────────────────────────────────────
 // Init
-loadFramework();
-loadActivity();
-startActivityPoll();
+// ──────────────────────────────────────────────
+async function init() {
+  let needsSetup = false;
+  try {
+    const status = await api('GET', '/api/setup/status');
+    needsSetup = status.needs_setup;
+    if (!needsSetup) {
+      $('statusDot').className = 'status-dot ok';
+      $('statusText').textContent = status.current_config?.project_name || 'amure-do';
+    }
+  } catch {
+    // Server might not be running yet
+    needsSetup = true;
+  }
+
+  if (needsSetup) {
+    currentTab = 'setup';
+    renderTabs(true);
+    switchTab('setup');
+  } else {
+    currentTab = 'research';
+    renderTabs(false);
+    switchTab('research');
+  }
+}
+
+// Keyboard shortcut: Enter on knowledge search
+document.addEventListener('keydown', function(e) {
+  if (e.target === $('knowledgeSearch') && e.key === 'Enter') {
+    searchKnowledge();
+  }
+});
+
+init();
 </script>
 </body>
 </html>
