@@ -389,28 +389,80 @@ label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:4px;font-
       </div>
     </div>
 
-    <!-- Lab Panel -->
-    <div class="panel" id="panelLab" style="padding:0;">
-      <div class="split" style="height:100%;padding:0;">
-        <div class="split-left" style="border-right:1px solid var(--border);padding:16px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="font-size:15px;">Sessions</h3>
-            <button class="btn btn-primary btn-sm" onclick="showNewSession()">+ 새 세션</button>
+    <!-- Evolution Panel -->
+    <div class="panel" id="panelEvolution">
+      <div style="max-width:1000px;">
+        <h3 style="font-size:18px;margin-bottom:16px;">Evolution Dashboard</h3>
+        <div class="grid">
+          <div class="card">
+            <h3>Population</h3>
+            <div id="evoPopulation" style="font-size:13px;color:var(--text-dim);">로딩 중...</div>
           </div>
-          <div id="newSessionForm" style="display:none;margin-bottom:12px;" class="card">
-            <div class="form-group"><label>제목</label><input id="sessionTitle" placeholder="세션 제목..."></div>
-            <div class="form-group"><label>연결할 Claim ID (선택)</label><input id="sessionClaimId" placeholder="claim_..."></div>
-            <button class="btn btn-primary btn-sm" onclick="createSession()">생성</button>
+          <div class="card">
+            <h3>Best Heuristic</h3>
+            <div id="evoBest" style="font-size:13px;color:var(--text-dim);">로딩 중...</div>
           </div>
-          <div id="sessionList"></div>
+          <div class="card">
+            <h3>Knowledge Accumulated</h3>
+            <div id="evoKnowledge" style="font-size:13px;color:var(--text-dim);">로딩 중...</div>
+          </div>
         </div>
-        <div class="split-right" style="padding:16px;display:flex;flex-direction:column;">
-          <div id="chatArea">
-            <div class="empty-state">
-              <h3>Lab 세션</h3>
-              <p>AI와 자유롭게 탐구하고 실험하세요.</p>
-            </div>
+        <div class="card" style="margin-top:12px;">
+          <h3>Generation History</h3>
+          <div id="evoHistory" style="max-height:200px;overflow-y:auto;font-size:12px;font-family:monospace;"></div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3>Top Heuristics</h3>
+          <div id="evoTopList" style="max-height:500px;overflow-y:auto;"></div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3>Knowledge Insights</h3>
+          <div id="evoInsights" style="max-height:400px;overflow-y:auto;font-size:13px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="panel" id="panelDebug">
+      <div style="max-width:1000px;">
+        <h3 style="font-size:18px;margin-bottom:16px;">Debug Console</h3>
+        <div class="grid">
+          <div class="card">
+            <h3>Graph State</h3>
+            <div id="debugGraph" style="font-size:13px;color:var(--text-dim);">로딩 중...</div>
           </div>
+          <div class="card">
+            <h3>System</h3>
+            <div id="debugSystem" style="font-size:13px;color:var(--text-dim);">로딩 중...</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3>API Tester</h3>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <select id="debugMethod" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:13px;">
+              <option>GET</option><option>POST</option><option>DELETE</option><option>PATCH</option>
+            </select>
+            <input id="debugPath" placeholder="/api/health" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:13px;">
+            <button class="btn btn-primary btn-sm" onclick="debugApiCall()">Send</button>
+          </div>
+          <textarea id="debugBody" placeholder='{"key": "value"}' style="width:100%;height:60px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:12px;font-family:monospace;resize:vertical;margin-bottom:8px;display:none;"></textarea>
+          <div id="debugResponse" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:10px;font-family:monospace;font-size:12px;max-height:400px;overflow:auto;white-space:pre-wrap;color:var(--green);">응답이 여기에 표시됩니다</div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h3>API Log</h3>
+            <button class="btn btn-outline btn-sm" onclick="clearDebugLog()">Clear</button>
+          </div>
+          <div id="debugLog" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:12px;font-family:monospace;"></div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3>Graph Nodes</h3>
+          <div style="margin-bottom:8px;">
+            <input id="debugSearchQ" placeholder="RAG 검색..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:13px;width:300px;" onkeydown="if(event.key==='Enter')debugSearch()">
+            <button class="btn btn-outline btn-sm" onclick="debugSearch()">Search</button>
+            <button class="btn btn-outline btn-sm" onclick="debugLoadAllNodes()">All Nodes</button>
+          </div>
+          <div id="debugNodes" style="max-height:400px;overflow-y:auto;font-size:12px;"></div>
         </div>
       </div>
     </div>
@@ -458,9 +510,7 @@ let currentTab = 'research';
 let claims = [];
 let selectedClaimId = null;
 let selectedClaimData = null;
-let labSessions = [];
-let selectedSessionId = null;
-let chatMessages = [];
+let debugLogEntries_init = [];
 let wizardStep = 0;
 const WIZARD_STEPS = 5;
 
@@ -495,7 +545,8 @@ const TABS = [
   { id: 'setup', label: 'Setup', panel: 'panelSetup' },
   { id: 'research', label: 'Research', panel: 'panelResearch' },
   { id: 'knowledge', label: 'Knowledge', panel: 'panelKnowledge' },
-  { id: 'lab', label: 'Lab', panel: 'panelLab' },
+  { id: 'evolution', label: 'Evolution', panel: 'panelEvolution' },
+  { id: 'debug', label: 'Debug', panel: 'panelDebug' },
   { id: 'settings', label: 'Settings', panel: 'panelSettings' },
 ];
 
@@ -522,7 +573,8 @@ function switchTab(id) {
   });
   if (id === 'research') loadClaims();
   if (id === 'knowledge') loadKnowledge();
-  if (id === 'lab') loadSessions();
+  if (id === 'evolution') loadEvolution();
+  if (id === 'debug') loadDebug();
   if (id === 'settings') loadSettings();
 }
 
@@ -966,132 +1018,252 @@ async function searchKnowledge() {
 }
 
 // ──────────────────────────────────────────────
-// Lab
+// Debug
 // ──────────────────────────────────────────────
-async function loadSessions() {
+let debugLogEntries = [];
+
+// ──────────────────────────────────────────────
+// Evolution
+// ──────────────────────────────────────────────
+async function loadEvolution() {
   try {
-    const data = await api('GET', '/api/lab/sessions');
-    labSessions = data.sessions || [];
-    renderSessionList();
+    // Get all graph data
+    const all = await api('GET', '/api/graph/all');
+    const nodes = all.nodes || [];
+    const edges = all.edges || [];
+
+    // Filter experiment nodes (heuristics from HeuristiX)
+    const experiments = nodes.filter(n => n.kind === 'Experiment' && n.metadata?.generation !== undefined);
+    const claims = nodes.filter(n => n.kind === 'Claim' && n.metadata?.source === 'distillation');
+    const reasons = nodes.filter(n => n.kind === 'Reason');
+
+    // Population stats
+    const generations = [...new Set(experiments.map(e => e.metadata?.generation || 0))].sort((a,b) => a - b);
+    const latestGen = generations.length > 0 ? Math.max(...generations) : 0;
+    const latestPop = experiments.filter(e => (e.metadata?.generation || 0) === latestGen);
+
+    $('evoPopulation').innerHTML = `
+      <div>Total heuristics: <span style="color:var(--accent);font-weight:600;">${experiments.length}</span></div>
+      <div>Generations: <span style="color:var(--accent);font-weight:600;">${generations.length}</span></div>
+      <div>Latest gen: <span style="color:var(--accent);font-weight:600;">${latestGen}</span> (${latestPop.length} individuals)</div>
+    `;
+
+    // Best heuristic
+    const withMakespan = experiments.filter(e => e.metadata?.scores?.makespan !== undefined);
+    if (withMakespan.length > 0) {
+      const best = withMakespan.reduce((a, b) =>
+        (a.metadata.scores.makespan < b.metadata.scores.makespan) ? a : b
+      );
+      $('evoBest').innerHTML = `
+        <div style="color:var(--green);font-size:20px;font-weight:700;">Makespan: ${best.metadata.scores.makespan.toFixed(1)}</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Gen ${best.metadata.generation || '?'}</div>
+        <div style="font-size:12px;margin-top:4px;">${esc(best.statement || '').substring(0, 80)}...</div>
+      `;
+    } else {
+      $('evoBest').innerHTML = '<span style="color:var(--text-faint);">아직 결과 없음</span>';
+    }
+
+    // Knowledge stats
+    $('evoKnowledge').innerHTML = `
+      <div>Claims: <span style="color:var(--accent);">${claims.length}</span></div>
+      <div>Reasons: <span style="color:var(--accent);">${reasons.length}</span></div>
+      <div>Edges: <span style="color:var(--accent);">${edges.length}</span></div>
+    `;
+
+    // Generation history
+    let histHtml = '';
+    generations.forEach(gen => {
+      const genExps = experiments.filter(e => (e.metadata?.generation || 0) === gen);
+      const scores = genExps.map(e => e.metadata?.scores?.makespan).filter(s => s !== undefined);
+      const best = scores.length > 0 ? Math.min(...scores).toFixed(1) : '?';
+      const avg = scores.length > 0 ? (scores.reduce((a,b) => a+b, 0) / scores.length).toFixed(1) : '?';
+      const barWidth = scores.length > 0 ? Math.max(10, 100 - (Math.min(...scores) / 20)) : 10;
+      histHtml += `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <span style="color:var(--text-faint);width:50px;">Gen ${gen}</span>
+        <div style="background:var(--accent);height:14px;width:${barWidth}%;border-radius:3px;opacity:0.6;"></div>
+        <span style="color:var(--green);width:60px;">best: ${best}</span>
+        <span style="color:var(--text-dim);width:60px;">avg: ${avg}</span>
+        <span style="color:var(--text-faint);">(${genExps.length} ind)</span>
+      </div>`;
+    });
+    $('evoHistory').innerHTML = histHtml || '<div style="color:var(--text-faint);padding:8px;">진화 이력이 없습니다.</div>';
+
+    // Top heuristics (sorted by makespan)
+    const sorted = [...withMakespan].sort((a, b) => a.metadata.scores.makespan - b.metadata.scores.makespan);
+    const top10 = sorted.slice(0, 10);
+    let topHtml = '';
+    top10.forEach((h, i) => {
+      const s = h.metadata.scores;
+      const code = h.metadata?.code || '';
+      const gen = h.metadata?.generation || '?';
+      topHtml += `<div class="card" style="margin-bottom:8px;border-left:3px solid ${i === 0 ? 'var(--green)' : 'var(--accent)'};">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <span style="color:${i === 0 ? 'var(--green)' : 'var(--accent)'};font-weight:700;">#${i+1}</span>
+            <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">Gen ${gen}</span>
+          </div>
+          <div style="font-size:13px;">
+            makespan: <span style="color:var(--green);font-weight:600;">${s.makespan?.toFixed(1) || '?'}</span>
+            ${s.flowtime ? ' | flow: ' + s.flowtime.toFixed(1) : ''}
+            ${s.utilization ? ' | util: ' + (s.utilization * 100).toFixed(0) + '%' : ''}
+          </div>
+        </div>
+        <div style="font-size:12px;margin-top:4px;">${esc(h.statement || '').substring(0, 120)}</div>
+        <details style="margin-top:6px;">
+          <summary style="cursor:pointer;font-size:11px;color:var(--accent);">코드 보기</summary>
+          <pre style="background:var(--bg);padding:8px;border-radius:4px;font-size:11px;margin-top:4px;overflow-x:auto;max-height:200px;">${esc(code)}</pre>
+        </details>
+      </div>`;
+    });
+    $('evoTopList').innerHTML = topHtml || '<div style="color:var(--text-faint);padding:8px;">아직 heuristic이 없습니다.</div>';
+
+    // Knowledge insights (distillation claims)
+    let insightHtml = '';
+    claims.sort((a, b) => (b.metadata?.generation || 0) - (a.metadata?.generation || 0));
+    claims.slice(0, 20).forEach(c => {
+      const gen = c.metadata?.generation || '?';
+      const failed = c.metadata?.failed;
+      const color = failed ? 'var(--red)' : 'var(--green)';
+      const icon = failed ? '✗' : '✓';
+      insightHtml += `<div style="padding:6px 8px;margin:3px 0;border-left:3px solid ${color};background:var(--card);border-radius:0 4px 4px 0;">
+        <span style="color:${color};font-weight:600;">${icon}</span>
+        <span style="color:var(--text-faint);font-size:11px;">Gen ${gen}</span>
+        <span style="font-size:13px;margin-left:6px;">${esc(c.statement)}</span>
+      </div>`;
+    });
+    $('evoInsights').innerHTML = insightHtml || '<div style="color:var(--text-faint);padding:8px;">아직 인사이트가 없습니다.</div>';
+
   } catch (e) {
-    $('sessionList').innerHTML = '<div style="font-size:13px;color:var(--text-faint);padding:8px;">세션을 불러올 수 없습니다.</div>';
+    $('evoPopulation').innerHTML = '<span style="color:var(--red);">Error: ' + esc(e.message) + '</span>';
   }
 }
 
-function renderSessionList() {
-  if (labSessions.length === 0) {
-    $('sessionList').innerHTML = '<div style="font-size:13px;color:var(--text-faint);padding:8px;">세션이 없습니다. 새 세션을 만드세요.</div>';
+// ──────────────────────────────────────────────
+// Debug
+// ──────────────────────────────────────────────
+async function loadDebug() {
+  try {
+    const health = await api('GET', '/api/health');
+    $('debugSystem').innerHTML = '<pre style="margin:0;font-size:12px;color:var(--text);white-space:pre-wrap;">' + JSON.stringify(health, null, 2) + '</pre>';
+  } catch (e) { $('debugSystem').innerHTML = '<span style="color:var(--red);">Error: ' + esc(e.message) + '</span>'; }
+
+  try {
+    const summary = await api('GET', '/api/graph/summary');
+    let html = '<div style="font-size:13px;">';
+    html += '<div>Nodes: <span style="color:var(--accent);font-weight:600;">' + summary.n_nodes + '</span></div>';
+    html += '<div>Edges: <span style="color:var(--accent);font-weight:600;">' + summary.n_edges + '</span></div>';
+    html += '<div>Failed: <span style="color:var(--red);">' + (summary.n_failed || 0) + '</span></div>';
+    if (summary.node_kinds) {
+      html += '<div style="margin-top:6px;font-size:12px;color:var(--text-dim);">';
+      Object.entries(summary.node_kinds).forEach(([k,v]) => { html += k + ': ' + v + ' &nbsp; '; });
+      html += '</div>';
+    }
+    if (summary.edge_kinds) {
+      html += '<div style="font-size:12px;color:var(--text-dim);">';
+      Object.entries(summary.edge_kinds).forEach(([k,v]) => { html += k + ': ' + v + ' &nbsp; '; });
+      html += '</div>';
+    }
+    html += '</div>';
+    $('debugGraph').innerHTML = html;
+  } catch (e) { $('debugGraph').innerHTML = '<span style="color:var(--red);">Error</span>'; }
+}
+
+// Show/hide body textarea based on method
+document.addEventListener('change', e => {
+  if (e.target && e.target.id === 'debugMethod') {
+    const m = e.target.value;
+    const ta = $('debugBody');
+    if (ta) ta.style.display = (m === 'POST' || m === 'PATCH') ? 'block' : 'none';
+  }
+});
+
+async function debugApiCall() {
+  const method = $('debugMethod').value;
+  const path = $('debugPath').value.trim();
+  if (!path) { toast('Path를 입력하세요', 'error'); return; }
+  const bodyText = $('debugBody').value.trim();
+  let body = null;
+  if ((method === 'POST' || method === 'PATCH') && bodyText) {
+    try { body = JSON.parse(bodyText); } catch { toast('Invalid JSON body', 'error'); return; }
+  }
+  const startTime = performance.now();
+  try {
+    const data = await api(method, path, body);
+    const elapsed = (performance.now() - startTime).toFixed(0);
+    const json = JSON.stringify(data, null, 2);
+    $('debugResponse').innerHTML = '<span style="color:var(--green);">' + method + ' ' + esc(path) + ' — ' + elapsed + 'ms</span>\n' + esc(json);
+    addDebugLog(method, path, elapsed, 'ok', json.length);
+  } catch (e) {
+    const elapsed = (performance.now() - startTime).toFixed(0);
+    $('debugResponse').innerHTML = '<span style="color:var(--red);">' + method + ' ' + esc(path) + ' — ' + elapsed + 'ms ERROR</span>\n' + esc(e.message);
+    addDebugLog(method, path, elapsed, 'error', 0);
+  }
+}
+
+function addDebugLog(method, path, elapsed, status, size) {
+  const time = new Date().toLocaleTimeString();
+  const color = status === 'ok' ? 'var(--green)' : 'var(--red)';
+  debugLogEntries.unshift({ time, method, path, elapsed, status, size });
+  if (debugLogEntries.length > 50) debugLogEntries.pop();
+  renderDebugLog();
+}
+
+function renderDebugLog() {
+  $('debugLog').innerHTML = debugLogEntries.map(e => {
+    const color = e.status === 'ok' ? 'var(--green)' : 'var(--red)';
+    return '<div style="padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;">'
+      + '<span style="color:var(--text-faint);width:70px;">' + e.time + '</span>'
+      + '<span style="color:var(--accent);width:50px;font-weight:600;">' + e.method + '</span>'
+      + '<span style="flex:1;">' + esc(e.path) + '</span>'
+      + '<span style="color:' + color + ';">' + e.elapsed + 'ms</span>'
+      + '<span style="color:var(--text-faint);font-size:11px;">' + (e.size > 0 ? (e.size > 1000 ? (e.size/1000).toFixed(1) + 'KB' : e.size + 'B') : '') + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function clearDebugLog() {
+  debugLogEntries = [];
+  $('debugLog').innerHTML = '<div style="color:var(--text-faint);padding:8px;">로그가 비어 있습니다.</div>';
+}
+
+async function debugSearch() {
+  const q = $('debugSearchQ').value.trim();
+  if (!q) { debugLoadAllNodes(); return; }
+  try {
+    const data = await api('GET', '/api/graph/search?q=' + encodeURIComponent(q) + '&top_k=20');
+    const results = data.results || [];
+    renderDebugNodes(results, 'search');
+  } catch (e) { $('debugNodes').innerHTML = '<span style="color:var(--red);">Error: ' + esc(e.message) + '</span>'; }
+}
+
+async function debugLoadAllNodes() {
+  try {
+    const data = await api('GET', '/api/graph/all');
+    renderDebugNodes(data.nodes || [], 'all');
+  } catch (e) { $('debugNodes').innerHTML = '<span style="color:var(--red);">Error: ' + esc(e.message) + '</span>'; }
+}
+
+function renderDebugNodes(nodes, mode) {
+  if (nodes.length === 0) {
+    $('debugNodes').innerHTML = '<div style="color:var(--text-faint);padding:8px;">노드가 없습니다.</div>';
     return;
   }
-  let html = '';
-  labSessions.forEach(s => {
-    const sel = s.id === selectedSessionId ? ' selected' : '';
-    html += '<div class="list-item' + sel + '" onclick="selectSession(\'' + s.id + '\')">';
-    html += '<div class="li-title">' + esc(s.title || s.id) + '</div>';
-    html += '<div class="li-meta">' + (s.claim_id ? 'Claim: ' + esc(s.claim_id) : '') + '</div>';
+  const kindColors = { Claim: 'var(--accent)', Reason: '#d2a8ff', Evidence: 'var(--text-dim)', Experiment: '#f0883e', Fact: 'var(--green)' };
+  let html = '<div style="font-size:11px;color:var(--text-faint);margin-bottom:6px;">' + nodes.length + '개 ' + (mode === 'search' ? '검색 결과' : '전체 노드') + '</div>';
+  nodes.forEach(n => {
+    const kind = n.kind || '?';
+    const color = kindColors[kind] || 'var(--text-dim)';
+    const status = n.status || '';
+    const id = (n.id || n.node_id || '').substring(0, 8);
+    html += '<div style="padding:6px 8px;margin:2px 0;border-left:3px solid ' + color + ';background:var(--card);border-radius:0 4px 4px 0;font-size:12px;">';
+    html += '<span style="color:' + color + ';font-weight:600;">[' + kind + ']</span> ';
+    html += '<span>' + esc(n.statement || '') + '</span> ';
+    html += '<span style="color:var(--text-faint);font-size:10px;">' + id + '… ' + status + '</span>';
+    if (n.score !== undefined) html += ' <span style="color:var(--yellow);font-size:10px;">score:' + Number(n.score).toFixed(2) + '</span>';
+    if (n.keywords && n.keywords.length) html += '<div style="margin-top:2px;">' + n.keywords.map(k => '<span style="background:var(--bg);padding:1px 4px;border-radius:2px;font-size:10px;margin-right:3px;">' + esc(k) + '</span>').join('') + '</div>';
     html += '</div>';
   });
-  $('sessionList').innerHTML = html;
-}
-
-function showNewSession() {
-  const el = $('newSessionForm');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
-async function createSession() {
-  const title = $('sessionTitle').value.trim();
-  if (!title) { toast('제목을 입력하세요.', 'error'); return; }
-  const payload = { title };
-  const cid = $('sessionClaimId').value.trim();
-  if (cid) payload.claim_id = cid;
-  try {
-    const data = await api('POST', '/api/lab/sessions', payload);
-    toast('세션이 생성되었습니다!', 'success');
-    $('sessionTitle').value = '';
-    $('sessionClaimId').value = '';
-    $('newSessionForm').style.display = 'none';
-    loadSessions();
-    if (data.id) selectSession(data.id);
-  } catch (e) { toast('오류: ' + e.message, 'error'); }
-}
-
-async function selectSession(id) {
-  selectedSessionId = id;
-  renderSessionList();
-  try {
-    const data = await api('GET', '/api/lab/sessions/' + id);
-    chatMessages = data.messages || [];
-    renderChat(data.session);
-  } catch (e) {
-    $('chatArea').innerHTML = '<div class="empty-state"><p>오류: ' + esc(e.message) + '</p></div>';
-  }
-}
-
-function renderChat(session) {
-  let html = '<div class="chat-container">';
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px;">';
-  html += '<div style="font-size:15px;font-weight:500;">' + esc(session?.title || '') + '</div>';
-  html += '<button class="btn btn-red btn-sm" onclick="deleteSession(\'' + selectedSessionId + '\')">세션 삭제</button>';
-  html += '</div>';
-  html += '<div class="chat-messages" id="chatMessages">';
-  if (chatMessages.length === 0) {
-    html += '<div style="text-align:center;color:var(--text-faint);padding:20px;">메시지가 없습니다. 아래에서 대화를 시작하세요.</div>';
-  }
-  chatMessages.forEach(m => {
-    const role = m.role || 'user';
-    html += '<div class="chat-msg ' + role + '">';
-    html += '<div class="msg-role">' + (role === 'user' ? 'You' : 'AI') + '</div>';
-    html += '<div class="msg-body">' + renderSimpleMarkdown(m.content || '') + '</div>';
-    html += '</div>';
-  });
-  html += '</div>';
-  html += '<div class="chat-input-row">';
-  html += '<input id="chatInput" placeholder="메시지 입력..." onkeydown="if(event.key===\'Enter\')sendChat()">';
-  html += '<button class="btn btn-primary" onclick="sendChat()">전송</button>';
-  html += '</div>';
-  html += '</div>';
-  $('chatArea').innerHTML = html;
-  // Scroll to bottom
-  const msgBox = $('chatMessages');
-  if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
-}
-
-function renderSimpleMarkdown(text) {
-  // Minimal markdown: bold, italic, code blocks, inline code
-  let s = esc(text);
-  s = s.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--bg);padding:8px;border-radius:4px;overflow-x:auto;font-size:13px;margin:4px 0;">$1</pre>');
-  s = s.replace(/`([^`]+)`/g, '<code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-size:13px;">$1</code>');
-  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  return s;
-}
-
-async function sendChat() {
-  const input = $('chatInput');
-  if (!input) return;
-  const content = input.value.trim();
-  if (!content || !selectedSessionId) return;
-  input.value = '';
-  input.disabled = true;
-
-  // Optimistic add user message
-  chatMessages.push({ role: 'user', content });
-  const session = labSessions.find(s => s.id === selectedSessionId);
-  renderChat(session);
-
-  try {
-    const data = await api('POST', '/api/lab/send', { session_id: selectedSessionId, content });
-    // Add assistant message
-    chatMessages.push({ role: 'assistant', content: data.content || '' });
-    renderChat(session);
-  } catch (e) {
-    chatMessages.push({ role: 'assistant', content: '[Error] ' + e.message });
-    renderChat(session);
-    toast('전송 오류: ' + e.message, 'error');
-  }
-  input.disabled = false;
-  if ($('chatInput')) $('chatInput').focus();
+  $('debugNodes').innerHTML = html;
 }
 
 async function deleteSession(id) {

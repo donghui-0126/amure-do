@@ -1,31 +1,27 @@
 [project]
-name = "My Research"
-domain = "general"
-description = "Hypothesis-driven research project"
+name = "job scheduling optimization"
+domain = "custom"
+description = "기존 조합최적화 문제인 job-shop scheduling을 LLM기반으로 최적화 하기 위한 프레임워크"
 
 [server]
 host = "0.0.0.0"
-port = 8080
+port = 9090
 
 [backend]
 type = "none"
-# type = "http"
-# url = "http://localhost:5000"
-# type = "file"
-# dir = "backend"
-# command = "python3"
-# script = "server.py"
 timeout_secs = 300
 
 [llm]
 default_provider = "claude_cli"
-# default_model = ""
-# default_api_key = ""
-# default_api_url = ""
 max_tokens = 4096
 
 [gates]
-enabled = ["claim_gate", "argument_gate"]
+enabled = [
+    "claim_gate",
+    "argument_gate",
+    "evidence_gate",
+    "experiment_gate",
+]
 
 [dashboard]
 title = "amure-do"
