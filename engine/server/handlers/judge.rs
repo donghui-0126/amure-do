@@ -3,7 +3,7 @@
 
 use axum::extract::{Path, State};
 use axum::Json;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use uuid::Uuid;
 
 use crate::knowledge::types::*;
@@ -93,7 +93,7 @@ pub async fn judge_hypothesis(
     // 6. Extract conditions from insights
     let mut applies_to = Vec::new();
     let mut does_not_apply = Vec::new();
-    let mut untested = Vec::new();
+    let untested = Vec::new();
 
     for ins in &all_insights {
         for tag in &ins.tags {

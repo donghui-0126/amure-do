@@ -913,8 +913,8 @@ pub async fn auto_complete_claim(
     }
 
     // 2. 프롬프트 구성
-    let mut ctx = String::from("# AlphaFactor Knowledge Framework\n\n");
-    ctx.push_str("너는 퀀트 리서치 프레임워크의 Claim 설계자다.\n");
+    let mut ctx = String::from("# amure-do Knowledge Framework\n\n");
+    ctx.push_str("너는 가설 검증 프레임워크의 Claim 설계자다.\n");
     ctx.push_str("사용자가 아이디어를 주면, 아래 구조에 맞춰 JSON으로 응답해라.\n\n");
     ctx.push_str(&rag_context);
 

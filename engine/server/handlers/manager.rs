@@ -5,7 +5,6 @@ use axum::extract::State;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::Utc;
 
 use crate::knowledge::types::*;
 use crate::server::routes::AppState;
@@ -296,7 +295,8 @@ pub async fn run_managed_experiment(
 
 fn build_julia_eval_code(config: &ExperimentRunConfig) -> String {
     format!(
-        r#"include("/home/amure-do/amure-do-alphafactor/analysis/eval_template.jl")
+        r#"# Experiment evaluation — configure via backend
+# This template is a placeholder; adapt to your backend language.
 run_evaluation(
     px_threshold={},
     oi_threshold={},

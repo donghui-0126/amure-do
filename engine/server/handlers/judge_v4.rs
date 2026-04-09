@@ -4,7 +4,6 @@
 use axum::Json;
 use serde::Serialize;
 
-use crate::knowledge::thesis::*;
 
 #[derive(Serialize)]
 pub struct JudgeV4Result {
@@ -55,7 +54,7 @@ pub async fn judge_v4(
     // Find all related insights by tags
     let all_insights: Vec<_> = kb.insights.values().collect();
 
-    let theses: Vec<_> = all_insights.iter().filter(|i| i.tags.contains(&"thesis".to_string())).collect();
+    let _theses: Vec<_> = all_insights.iter().filter(|i| i.tags.contains(&"thesis".to_string())).collect();
     let premises: Vec<_> = all_insights.iter().filter(|i| i.tags.contains(&"premise".to_string())).collect();
     let args_for: Vec<_> = all_insights.iter().filter(|i| i.tags.contains(&"argument-for".to_string())).collect();
     let args_against: Vec<_> = all_insights.iter().filter(|i| i.tags.contains(&"argument-against".to_string())).collect();

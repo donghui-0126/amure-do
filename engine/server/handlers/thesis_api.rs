@@ -1,6 +1,6 @@
 /// Thesis API — CRUD with gate enforcement.
 
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::Json;
 use chrono::Utc;
 use serde::Deserialize;
@@ -55,7 +55,7 @@ pub async fn create_thesis(
         premises_data.push(p);
     }
 
-    let thesis = Thesis {
+    let _thesis = Thesis {
         id: thesis_id,
         claim: req.claim.clone(),
         mechanism: req.mechanism.clone(),

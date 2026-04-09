@@ -4,7 +4,6 @@
 use axum::extract::State;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::server::routes::AppState;
 
